@@ -104,6 +104,9 @@ export const renderNode = matcher<TreeNode, vscode.TreeItem>()
     item.tooltip =
       `Conversation #${c.id} · ${c.provider}\n` +
       `${c.provider_conversation_id}\n` +
+      (c.last_conversation_pid !== null
+        ? `Agent pid: ${c.last_conversation_pid}\n`
+        : "") +
       (c.workspace_path ? `Workspace: ${c.workspace_path}\n` : "") +
       (n.focus
         ? `Focused: ${n.focus.group_path}/${n.focus.session_slug} (${n.focus.session_kind} · ${n.focus.session_status})`

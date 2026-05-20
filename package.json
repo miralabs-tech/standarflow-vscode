@@ -163,6 +163,11 @@
         "icon": "$(edit)"
       },
       {
+        "command": "standarflow.conversationKill",
+        "title": "Standarflow: Kill Conversation Agent",
+        "icon": "$(stop-circle)"
+      },
+      {
         "command": "standarflow.copySessionReference",
         "title": "Standarflow: Copy Session Reference",
         "icon": "$(copy)"
@@ -297,6 +302,11 @@
           "command": "standarflow.conversationRename",
           "when": "view == standarflow.tree && viewItem =~ /^standarflow\\.conversation\\./",
           "group": "2_edit@1"
+        },
+        {
+          "command": "standarflow.conversationKill",
+          "when": "view == standarflow.tree && viewItem =~ /^standarflow\\.conversation\\./",
+          "group": "9_destructive@1"
         },
         {
           "command": "standarflow.copySessionReference",
