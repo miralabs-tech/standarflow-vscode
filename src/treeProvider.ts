@@ -259,7 +259,7 @@ const renderNode = matcher<TreeNode, vscode.TreeItem>()
   .with({ kind: "artefact" }, (n) => {
     const item = new vscode.TreeItem(
       n.artefact.slug,
-      vscode.TreeItemCollapsibleState.None,
+      vscode.TreeItemCollapsibleState.Collapsed,
     );
     item.id = `artefact:${n.artefact.id}`;
     item.iconPath = new vscode.ThemeIcon(artefactIconName(n.artefact.kind));
@@ -347,6 +347,38 @@ const renderNode = matcher<TreeNode, vscode.TreeItem>()
   })
   .exhaustive();
 
+/// Children of a session-like node — a session, or an artefact (which is
+/// itself a session row): nested artefacts, file references, and the
+/// Touched-files group. Shared by the `session` and `artefact` branches.
+async function sessionLikeChildren(
+  client: StandarflowClient,
+  groupPath: string,
+  session: SessionLite,
+): Promise<TreeNode[]> {
+  const [children, files, changes] = await Promise.all([
+    client.sessionChildren(session.id),
+    client.fileList(groupPath, session.slug),
+    client.sessionFileChanges(session.id, 200),
+  ]);
+  const artefactNodes: TreeNode[] = children.map((c) => ({
+    kind: "artefact",
+    groupPath,
+    parent: session,
+    artefact: c,
+  }));
+  const fileNodes: TreeNode[] = files.map((f) => ({
+    kind: "fileRef",
+    groupPath,
+    sessionSlug: session.slug,
+    file: f,
+  }));
+  const changeGroup: TreeNode[] =
+    changes.length > 0
+      ? [{ kind: "fileChangeGroup", groupPath, session, changes }]
+      : [];
+  return [...artefactNodes, ...fileNodes, ...changeGroup];
+}
+
 export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode> {
   private readonly _onDidChange = new vscode.EventEmitter<TreeNode | undefined>();
   readonly onDidChangeTreeData = this._onDidChange.event;
@@ -387,73 +419,54 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
       }));
       return [{ kind: "conversationsRoot" }, ...groupNodes];
     }
-    if (node.kind === "conversationsRoot") {
-      const [convs, focuses] = await Promise.all([
-        client.conversationList(),
-        client.focusList(),
-      ]);
-      const focusByConv = new Map(focuses.map((f) => [f.conversation_id, f]));
-      return convs.map((c) => ({
-        kind: "conversation",
-        conversation: c,
-        focus: focusByConv.get(c.id) ?? null,
-      }));
-    }
-    if (node.kind === "group") {
-      const [subgroups, sessions] = await Promise.all([
-        client.groupList(node.path),
-        client.sessionList(node.path),
-      ]);
-      const subgroupNodes: TreeNode[] = subgroups.map((g) => ({
-        kind: "group",
-        path: `${node.path}/${g.slug}`,
-        group: g,
-      }));
-      const sessionNodes: TreeNode[] = sessions
-        .filter((s) => s.parent_session_id === null)
-        .map((s) => ({ kind: "session", groupPath: node.path, session: s }));
-      return [...subgroupNodes, ...sessionNodes];
-    }
-    if (node.kind === "session") {
-      const [children, files, changes] = await Promise.all([
-        client.sessionChildren(node.session.id),
-        client.fileList(node.groupPath, node.session.slug),
-        client.sessionFileChanges(node.session.id, 200),
-      ]);
-      const artefactNodes: TreeNode[] = children.map((c) => ({
-        kind: "artefact",
-        groupPath: node.groupPath,
-        parent: node.session,
-        artefact: c,
-      }));
-      const fileNodes: TreeNode[] = files.map((f) => ({
-        kind: "fileRef",
-        groupPath: node.groupPath,
-        sessionSlug: node.session.slug,
-        file: f,
-      }));
-      const changeGroup: TreeNode[] =
-        changes.length > 0
-          ? [
-              {
-                kind: "fileChangeGroup",
-                groupPath: node.groupPath,
-                session: node.session,
-                changes,
-              },
-            ]
-          : [];
-      return [...artefactNodes, ...fileNodes, ...changeGroup];
-    }
-    if (node.kind === "fileChangeGroup") {
-      const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-      return buildFileTree(node.changes, root).map((n) =>
-        fileTreeNode(node.session.id, n),
-      );
-    }
-    if (node.kind === "fileChangeDir") {
-      return node.dir.children.map((n) => fileTreeNode(node.sessionId, n));
-    }
-    return [];
+    const childrenOf = matcher<TreeNode, Promise<TreeNode[]>>()
+      .with({ kind: "conversationsRoot" }, async () => {
+        const [convs, focuses] = await Promise.all([
+          client.conversationList(),
+          client.focusList(),
+        ]);
+        const focusByConv = new Map(focuses.map((f) => [f.conversation_id, f]));
+        return convs.map((c) => ({
+          kind: "conversation",
+          conversation: c,
+          focus: focusByConv.get(c.id) ?? null,
+        }));
+      })
+      .with({ kind: "group" }, async (n) => {
+        const [subgroups, sessions] = await Promise.all([
+          client.groupList(n.path),
+          client.sessionList(n.path),
+        ]);
+        const subgroupNodes: TreeNode[] = subgroups.map((g) => ({
+          kind: "group",
+          path: `${n.path}/${g.slug}`,
+          group: g,
+        }));
+        const sessionNodes: TreeNode[] = sessions
+          .filter((s) => s.parent_session_id === null)
+          .map((s) => ({ kind: "session", groupPath: n.path, session: s }));
+        return [...subgroupNodes, ...sessionNodes];
+      })
+      .with({ kind: "session" }, (n) =>
+        sessionLikeChildren(client, n.groupPath, n.session),
+      )
+      .with({ kind: "fileChangeGroup" }, (n) => {
+        const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        return Promise.resolve(
+          buildFileTree(n.changes, root).map((c) => fileTreeNode(n.session.id, c)),
+        );
+      })
+      .with({ kind: "fileChangeDir" }, (n) =>
+        Promise.resolve(n.dir.children.map((c) => fileTreeNode(n.sessionId, c))),
+      )
+      .with({ kind: "conversation" }, () => Promise.resolve<TreeNode[]>([]))
+      .with({ kind: "artefact" }, (n) =>
+        sessionLikeChildren(client, n.groupPath, n.artefact),
+      )
+      .with({ kind: "fileRef" }, () => Promise.resolve<TreeNode[]>([]))
+      .with({ kind: "fileChangeFile" }, () => Promise.resolve<TreeNode[]>([]))
+      .exhaustive();
+
+    return childrenOf(node);
   }
 }
