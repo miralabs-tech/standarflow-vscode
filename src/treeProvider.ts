@@ -18,7 +18,28 @@ export type TreeNode =
   | { kind: "artefact"; groupPath: string; parent: SessionLite; artefact: SessionLite }
   | { kind: "fileRef"; groupPath: string; sessionSlug: string; file: FileRefRow }
   | { kind: "fileChangeGroup"; groupPath: string; session: SessionLite; changes: FileChange[] }
-  | { kind: "fileChange"; groupPath: string; change: FileChange };
+  | { kind: "fileChangeDir"; sessionId: number; dir: FileTreeDir }
+  | { kind: "fileChangeFile"; sessionId: number; file: FileTreeFile };
+
+/// A directory in the coalesced "Touched files" path tree.
+export interface FileTreeDir {
+  kind: "dir";
+  name: string;
+  relPath: string;
+  children: FileTreeNode[];
+}
+
+/// A leaf in the path tree — one entry per distinct file, carrying every
+/// change row logged against it.
+export interface FileTreeFile {
+  kind: "file";
+  name: string;
+  relPath: string;
+  path: string;
+  changes: FileChange[];
+}
+
+export type FileTreeNode = FileTreeDir | FileTreeFile;
 
 const sessionIcon = matcher<SessionLite, vscode.ThemeIcon>()
   .with({ status: "active" }, () =>
@@ -72,6 +93,79 @@ function fileChangeIcon(op: string): vscode.ThemeIcon {
     default:
       return new vscode.ThemeIcon("diff-modified", new vscode.ThemeColor("charts.yellow"));
   }
+}
+
+function relSegments(filePath: string, root: string | undefined): string[] {
+  const norm = (s: string) => s.replace(/\\/g, "/").replace(/\/+$/, "");
+  const fp = norm(filePath);
+  if (root) {
+    const r = norm(root);
+    if (fp.toLowerCase().startsWith(`${r.toLowerCase()}/`)) {
+      return fp
+        .slice(r.length + 1)
+        .split("/")
+        .filter(Boolean);
+    }
+  }
+  return [fp];
+}
+
+function sortFileTree(nodes: FileTreeNode[]): void {
+  nodes.sort((a, b) => {
+    if (a.kind !== b.kind) return a.kind === "dir" ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+  for (const n of nodes) {
+    if (n.kind === "dir") sortFileTree(n.children);
+  }
+}
+
+/// Coalesce flat change rows into a path tree: one leaf per distinct file,
+/// carrying all its change rows. Paths are shown relative to the workspace.
+function buildFileTree(
+  changes: FileChange[],
+  root: string | undefined,
+): FileTreeNode[] {
+  const byPath = new Map<string, FileChange[]>();
+  for (const c of changes) {
+    const arr = byPath.get(c.file_path);
+    if (arr) arr.push(c);
+    else byPath.set(c.file_path, [c]);
+  }
+  const roots: FileTreeNode[] = [];
+  for (const [path, rows] of byPath) {
+    const segs = relSegments(path, root);
+    let children = roots;
+    let prefix = "";
+    for (let i = 0; i < segs.length - 1; i++) {
+      const name = segs[i];
+      prefix = prefix ? `${prefix}/${name}` : name;
+      let dir = children.find(
+        (n): n is FileTreeDir => n.kind === "dir" && n.name === name,
+      );
+      if (!dir) {
+        dir = { kind: "dir", name, relPath: prefix, children: [] };
+        children.push(dir);
+      }
+      children = dir.children;
+    }
+    const name = segs[segs.length - 1];
+    children.push({
+      kind: "file",
+      name,
+      relPath: prefix ? `${prefix}/${name}` : name,
+      path,
+      changes: rows,
+    });
+  }
+  sortFileTree(roots);
+  return roots;
+}
+
+function fileTreeNode(sessionId: number, n: FileTreeNode): TreeNode {
+  return n.kind === "dir"
+    ? { kind: "fileChangeDir", sessionId, dir: n }
+    : { kind: "fileChangeFile", sessionId, file: n };
 }
 
 function relTime(unixSec: number): string {
@@ -201,31 +295,47 @@ const renderNode = matcher<TreeNode, vscode.TreeItem>()
     return item;
   })
   .with({ kind: "fileChangeGroup" }, (n) => {
+    const distinct = new Set(n.changes.map((c) => c.file_path)).size;
     const item = new vscode.TreeItem(
       "Touched files",
       vscode.TreeItemCollapsibleState.Collapsed,
     );
     item.id = `fileChangeGroup:${n.session.id}`;
     item.iconPath = new vscode.ThemeIcon("history");
-    item.description = `${n.changes.length}`;
-    item.tooltip = `${n.changes.length} file change(s) logged for ${n.session.slug}`;
+    item.description = `${distinct}`;
+    item.tooltip = `${distinct} file(s) touched · ${n.changes.length} change(s) logged for ${n.session.slug}`;
     item.contextValue = "standarflow.fileChangeGroup";
     return item;
   })
-  .with({ kind: "fileChange" }, (n) => {
-    const uri = vscode.Uri.file(n.change.file_path);
+  .with({ kind: "fileChangeDir" }, (n) => {
     const item = new vscode.TreeItem(
-      basename(n.change.file_path),
-      vscode.TreeItemCollapsibleState.None,
+      n.dir.name,
+      vscode.TreeItemCollapsibleState.Expanded,
     );
-    item.id = `fileChange:${n.change.id}`;
-    item.iconPath = fileChangeIcon(n.change.op);
-    item.description = n.change.tool_name
-      ? `${n.change.op} · ${n.change.tool_name}`
-      : n.change.op;
+    item.id = `fileChangeDir:${n.sessionId}:${n.dir.relPath}`;
+    item.iconPath = vscode.ThemeIcon.Folder;
+    item.contextValue = "standarflow.fileChangeDir";
+    return item;
+  })
+  .with({ kind: "fileChangeFile" }, (n) => {
+    const f = n.file;
+    const uri = vscode.Uri.file(f.path);
+    const sorted = [...f.changes].sort((a, b) => a.ts - b.ts);
+    const first = sorted[0];
+    const last = sorted[sorted.length - 1];
+    const count = sorted.length;
+    const tools = [
+      ...new Set(sorted.map((c) => c.tool_name).filter((t): t is string => !!t)),
+    ];
+    const item = new vscode.TreeItem(f.name, vscode.TreeItemCollapsibleState.None);
+    item.id = `fileChangeFile:${n.sessionId}:${f.relPath}`;
+    item.iconPath = fileChangeIcon(first.op);
+    item.description = count > 1 ? `${first.op} ×${count}` : first.op;
     item.tooltip =
-      `${n.change.op} · ${n.change.file_path}` +
-      (n.change.tool_name ? `\nvia ${n.change.tool_name}` : "");
+      `${f.path}\n` +
+      `${first.op}${tools.length ? ` · ${tools.join(", ")}` : ""}\n` +
+      `${count} touch(es) · first ${new Date(first.ts * 1000).toLocaleString()}` +
+      (count > 1 ? `\nlast ${new Date(last.ts * 1000).toLocaleString()}` : "");
     item.contextValue = "standarflow.fileChange";
     item.resourceUri = uri;
     item.command = {
@@ -336,11 +446,13 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
       return [...artefactNodes, ...fileNodes, ...changeGroup];
     }
     if (node.kind === "fileChangeGroup") {
-      return node.changes.map((c) => ({
-        kind: "fileChange",
-        groupPath: node.groupPath,
-        change: c,
-      }));
+      const root = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+      return buildFileTree(node.changes, root).map((n) =>
+        fileTreeNode(node.session.id, n),
+      );
+    }
+    if (node.kind === "fileChangeDir") {
+      return node.dir.children.map((n) => fileTreeNode(node.sessionId, n));
     }
     return [];
   }

@@ -17,7 +17,8 @@ const groupPathOf = matcher<TreeNode, string | undefined>()
   .with({ kind: "artefact" }, (n) => n.groupPath)
   .with({ kind: "fileRef" }, (n) => n.groupPath)
   .with({ kind: "fileChangeGroup" }, (n) => n.groupPath)
-  .with({ kind: "fileChange" }, (n) => n.groupPath)
+  .with({ kind: "fileChangeDir" }, () => undefined)
+  .with({ kind: "fileChangeFile" }, () => undefined)
   .exhaustive();
 
 const sessionSlugOf = matcher<TreeNode, string | undefined>()
@@ -28,7 +29,8 @@ const sessionSlugOf = matcher<TreeNode, string | undefined>()
   .with({ kind: "artefact" }, (n) => n.artefact.slug)
   .with({ kind: "fileRef" }, (n) => n.sessionSlug)
   .with({ kind: "fileChangeGroup" }, (n) => n.session.slug)
-  .with({ kind: "fileChange" }, () => undefined)
+  .with({ kind: "fileChangeDir" }, () => undefined)
+  .with({ kind: "fileChangeFile" }, () => undefined)
   .exhaustive();
 
 const kindOf = matcher<TreeNode, string | undefined>()
@@ -39,7 +41,8 @@ const kindOf = matcher<TreeNode, string | undefined>()
   .with({ kind: "artefact" }, (n) => n.artefact.kind)
   .with({ kind: "fileRef" }, () => undefined)
   .with({ kind: "fileChangeGroup" }, () => undefined)
-  .with({ kind: "fileChange" }, () => undefined)
+  .with({ kind: "fileChangeDir" }, () => undefined)
+  .with({ kind: "fileChangeFile" }, () => undefined)
   .exhaustive();
 
 const selectionOf = matcher<TreeNode, SessionSelection | undefined>()
@@ -50,7 +53,8 @@ const selectionOf = matcher<TreeNode, SessionSelection | undefined>()
   .with({ kind: "artefact" }, (n) => ({ groupPath: n.groupPath, slug: n.artefact.slug }))
   .with({ kind: "fileRef" }, () => undefined)
   .with({ kind: "fileChangeGroup" }, () => undefined)
-  .with({ kind: "fileChange" }, () => undefined)
+  .with({ kind: "fileChangeDir" }, () => undefined)
+  .with({ kind: "fileChangeFile" }, () => undefined)
   .exhaustive();
 
 export function nodeGroupPath(node: TreeNode | undefined): string | undefined {
