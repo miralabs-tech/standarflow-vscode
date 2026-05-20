@@ -90,6 +90,24 @@ export interface FocusedSession {
   pending_session_id: number | null;
 }
 
+/// One conversation's focused session, as returned by `focus_list` — the
+/// whole focus map, readable by a client that is not itself a conversation.
+export interface FocusEntry {
+  conversation_id: number;
+  provider: string;
+  provider_conversation_id: string;
+  client_label: string | null;
+  workspace_path: string | null;
+  last_seen_at: number;
+  ended_at: number | null;
+  group_path: string;
+  session_id: number;
+  session_slug: string;
+  session_kind: string;
+  session_status: SessionStatus;
+  focused_at: number;
+}
+
 export interface FileRefRow {
   id: number;
   session_id: number;
@@ -290,12 +308,20 @@ export class StandarflowClient {
     });
   }
 
-  async sessionFocus(groupPath: string, slug: string): Promise<void> {
-    await this.callRaw("session_focus", { group_path: groupPath, slug });
+  async sessionFocus(
+    groupPath: string,
+    slug: string,
+    conversationId?: number,
+  ): Promise<void> {
+    const payload: Record<string, unknown> = { group_path: groupPath, slug };
+    if (conversationId !== undefined) payload.conversation_id = conversationId;
+    await this.callRaw("session_focus", payload);
   }
 
-  async sessionUnfocus(): Promise<void> {
-    await this.callRaw("session_unfocus", {});
+  async sessionUnfocus(conversationId?: number): Promise<void> {
+    const payload: Record<string, unknown> = {};
+    if (conversationId !== undefined) payload.conversation_id = conversationId;
+    await this.callRaw("session_unfocus", payload);
   }
 
   async sessionFocused(conversationId?: number): Promise<FocusedSession | null> {
@@ -316,6 +342,20 @@ export class StandarflowClient {
     const payload: Record<string, unknown> = {};
     if (activeSince !== undefined) payload.active_since = activeSince;
     return this.call<Conversation[]>("conversation_list", payload);
+  }
+
+  focusList(): Promise<FocusEntry[]> {
+    return this.call<FocusEntry[]>("focus_list");
+  }
+
+  conversationSetLabel(
+    conversationId: number,
+    label: string | null,
+  ): Promise<Conversation> {
+    return this.call<Conversation>("conversation_set_label", {
+      conversation_id: conversationId,
+      label,
+    });
   }
 
   sessionParticipants(sessionId: number): Promise<Participant[]> {

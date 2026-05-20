@@ -148,17 +148,19 @@
         "icon": "$(trash)"
       },
       {
-        "command": "standarflow.sessionFocus",
-        "title": "Standarflow: Focus Session",
+        "command": "standarflow.conversationFocus",
+        "title": "Standarflow: Focus Conversation on Session…",
         "icon": "$(target)"
       },
       {
-        "command": "standarflow.sessionUnfocus",
-        "title": "Standarflow: Clear Focus"
+        "command": "standarflow.conversationUnfocus",
+        "title": "Standarflow: Clear Conversation Focus",
+        "icon": "$(x)"
       },
       {
-        "command": "standarflow.sessionFocusPick",
-        "title": "Standarflow: Pick Focus Session…"
+        "command": "standarflow.conversationRename",
+        "title": "Standarflow: Rename Conversation",
+        "icon": "$(edit)"
       },
       {
         "command": "standarflow.copySessionReference",
@@ -282,9 +284,19 @@
           "group": "3_relocate@2"
         },
         {
-          "command": "standarflow.sessionFocus",
-          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
-          "group": "4_focus@1"
+          "command": "standarflow.conversationFocus",
+          "when": "view == standarflow.tree && viewItem =~ /^standarflow\\.conversation\\./",
+          "group": "1_focus@1"
+        },
+        {
+          "command": "standarflow.conversationUnfocus",
+          "when": "view == standarflow.tree && viewItem == standarflow.conversation.focused",
+          "group": "1_focus@2"
+        },
+        {
+          "command": "standarflow.conversationRename",
+          "when": "view == standarflow.tree && viewItem =~ /^standarflow\\.conversation\\./",
+          "group": "2_edit@1"
         },
         {
           "command": "standarflow.copySessionReference",

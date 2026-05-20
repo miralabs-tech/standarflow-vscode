@@ -1,14 +1,18 @@
 import * as vscode from "vscode";
 import { matcher } from "matchigo";
 import type {
+  Conversation,
   FileChange,
   FileRefRow,
+  FocusEntry,
   GroupRow,
   SessionLite,
   StandarflowClient,
 } from "./mcpClient";
 
 export type TreeNode =
+  | { kind: "conversationsRoot" }
+  | { kind: "conversation"; conversation: Conversation; focus: FocusEntry | null }
   | { kind: "group"; path: string; group: GroupRow }
   | { kind: "session"; groupPath: string; session: SessionLite }
   | { kind: "artefact"; groupPath: string; parent: SessionLite; artefact: SessionLite }
@@ -70,7 +74,60 @@ function fileChangeIcon(op: string): vscode.ThemeIcon {
   }
 }
 
+function relTime(unixSec: number): string {
+  const diff = Math.floor(Date.now() / 1000 - unixSec);
+  if (diff < 60) return "just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
+
+function conversationLabel(c: Conversation): string {
+  return c.client_label ?? c.provider_conversation_id.slice(0, 8);
+}
+
 const renderNode = matcher<TreeNode, vscode.TreeItem>()
+  .with({ kind: "conversationsRoot" }, () => {
+    const item = new vscode.TreeItem(
+      "Conversations",
+      vscode.TreeItemCollapsibleState.Collapsed,
+    );
+    item.id = "conversationsRoot";
+    item.iconPath = new vscode.ThemeIcon("comment-discussion");
+    item.contextValue = "standarflow.conversationsRoot";
+    item.tooltip = "AI chats known to this workspace and the session each one focuses.";
+    return item;
+  })
+  .with({ kind: "conversation" }, (n) => {
+    const c = n.conversation;
+    const ended = c.ended_at !== null;
+    const item = new vscode.TreeItem(
+      conversationLabel(c),
+      vscode.TreeItemCollapsibleState.None,
+    );
+    item.id = `conversation:${c.id}`;
+    item.iconPath = new vscode.ThemeIcon(
+      "comment-discussion",
+      n.focus
+        ? new vscode.ThemeColor("charts.green")
+        : new vscode.ThemeColor(ended ? "charts.gray" : "foreground"),
+    );
+    item.description = n.focus
+      ? `→ ${n.focus.group_path}/${n.focus.session_slug} · ${relTime(c.last_seen_at)}`
+      : `no focus · ${relTime(c.last_seen_at)}`;
+    item.tooltip =
+      `Conversation #${c.id} · ${c.provider}\n` +
+      `${c.provider_conversation_id}\n` +
+      (c.workspace_path ? `Workspace: ${c.workspace_path}\n` : "") +
+      (n.focus
+        ? `Focused: ${n.focus.group_path}/${n.focus.session_slug} (${n.focus.session_kind} · ${n.focus.session_status})`
+        : "No focused session") +
+      (ended ? "\n(ended)" : "");
+    item.contextValue = n.focus
+      ? "standarflow.conversation.focused"
+      : "standarflow.conversation.unfocused";
+    return item;
+  })
   .with({ kind: "group" }, (n) => {
     const label = n.group.title ?? n.group.slug;
     const item = new vscode.TreeItem(
@@ -213,7 +270,24 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
     }
     if (!node) {
       const groups = await client.groupList();
-      return groups.map((g) => ({ kind: "group", path: g.slug, group: g }));
+      const groupNodes: TreeNode[] = groups.map((g) => ({
+        kind: "group",
+        path: g.slug,
+        group: g,
+      }));
+      return [{ kind: "conversationsRoot" }, ...groupNodes];
+    }
+    if (node.kind === "conversationsRoot") {
+      const [convs, focuses] = await Promise.all([
+        client.conversationList(),
+        client.focusList(),
+      ]);
+      const focusByConv = new Map(focuses.map((f) => [f.conversation_id, f]));
+      return convs.map((c) => ({
+        kind: "conversation",
+        conversation: c,
+        focus: focusByConv.get(c.id) ?? null,
+      }));
     }
     if (node.kind === "group") {
       const [subgroups, sessions] = await Promise.all([

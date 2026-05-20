@@ -3,7 +3,7 @@ import type { StandarflowClient } from "../mcpClient";
 import type { TreeNode } from "../treeProvider";
 import { copyFileRefPath, copyGroupPath, copySessionReference, copySessionSlug } from "./clipboard";
 import { detachFileRef, fileAttach, fileClaim, fileDeleteWithSource, memoryImport } from "./file";
-import { sessionFocus, sessionFocusPick, sessionUnfocus } from "./focus";
+import { conversationFocus, conversationRename, conversationUnfocus } from "./focus";
 import { groupCreate, groupDelete } from "./group";
 import {
   sessionDelete,
@@ -42,9 +42,9 @@ const TABLE: CommandDesc[] = [
   { id: "standarflow.detachFileRef", run: detachFileRef, post: "tree" },
   { id: "standarflow.fileClaim", run: fileClaim, post: "tree" },
   { id: "standarflow.fileDeleteWithSource", run: fileDeleteWithSource, post: "tree" },
-  { id: "standarflow.sessionFocus", run: sessionFocus, post: "focus" },
-  { id: "standarflow.sessionUnfocus", run: sessionUnfocus, post: "focus" },
-  { id: "standarflow.sessionFocusPick", run: sessionFocusPick, post: "focus" },
+  { id: "standarflow.conversationFocus", run: conversationFocus, post: "focus" },
+  { id: "standarflow.conversationUnfocus", run: conversationUnfocus, post: "focus" },
+  { id: "standarflow.conversationRename", run: conversationRename, post: "tree" },
   { id: "standarflow.copySessionReference", run: copySessionReference, post: "none" },
   { id: "standarflow.copySessionSlug", run: copySessionSlug, post: "none" },
   { id: "standarflow.copyGroupPath", run: copyGroupPath, post: "none" },

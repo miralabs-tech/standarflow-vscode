@@ -1,57 +1,56 @@
 import * as vscode from "vscode";
 import type { CommandCtx } from "./shared";
 import { pickSession } from "./shared";
-import { nodeSelection } from "./treeNode";
+import { nodeConversation } from "./treeNode";
 
-export async function sessionFocus(ctx: CommandCtx): Promise<void> {
-  const { client, node } = ctx;
-  const sel = nodeSelection(node) ?? (await pickSession(client, "Session to focus"));
+export async function conversationFocus(ctx: CommandCtx): Promise<void> {
+  const conv = nodeConversation(ctx.node);
+  if (!conv) {
+    void vscode.window.showWarningMessage(
+      "Pick a conversation in the Standarflow tree to focus it.",
+    );
+    return;
+  }
+  const sel = await pickSession(ctx.client, "Session to focus this conversation on");
   if (!sel) return;
-  await client.sessionFocus(sel.groupPath, sel.slug);
+  await ctx.client.sessionFocus(sel.groupPath, sel.slug, conv.conversation.id);
   void vscode.window.showInformationMessage(
-    `Focused ${sel.groupPath}/${sel.slug}. Touched files will auto-attach here when hooks fire.`,
+    `Focused ${sel.groupPath}/${sel.slug} for this conversation — its hook-driven file changes now attach there.`,
   );
 }
 
-export async function sessionUnfocus(ctx: CommandCtx): Promise<void> {
-  await ctx.client.sessionUnfocus();
-  void vscode.window.showInformationMessage("Standarflow focus cleared.");
-}
-
-export async function sessionFocusPick(ctx: CommandCtx): Promise<void> {
-  const { client } = ctx;
-  const current = await client.sessionFocused().catch(() => null);
-  const choices: {
-    label: string;
-    description?: string;
-    action: "focus" | "unfocus" | "current";
-  }[] = [];
-  if (current) {
-    choices.push({
-      label: `$(target) ${current.group_path}/${current.session_slug}`,
-      description: `current — ${current.session_kind} · ${current.session_status}`,
-      action: "current",
-    });
-    choices.push({
-      label: "$(x) Clear focus",
-      description: "No more auto-attach on tool calls",
-      action: "unfocus",
-    });
-  }
-  choices.push({
-    label: "$(circle-large-outline) Pick a different session…",
-    action: "focus",
-  });
-  const pick = await vscode.window.showQuickPick(choices, {
-    placeHolder: current
-      ? `Currently focused: ${current.group_path}/${current.session_slug}`
-      : "No session focused yet",
-  });
-  if (!pick) return;
-  if (pick.action === "current") return;
-  if (pick.action === "unfocus") {
-    await sessionUnfocus(ctx);
+export async function conversationUnfocus(ctx: CommandCtx): Promise<void> {
+  const conv = nodeConversation(ctx.node);
+  if (!conv) {
+    void vscode.window.showWarningMessage(
+      "Pick a conversation in the Standarflow tree to clear its focus.",
+    );
     return;
   }
-  await sessionFocus({ client, node: undefined });
+  await ctx.client.sessionUnfocus(conv.conversation.id);
+  void vscode.window.showInformationMessage("Focus cleared for this conversation.");
+}
+
+export async function conversationRename(ctx: CommandCtx): Promise<void> {
+  const conv = nodeConversation(ctx.node);
+  if (!conv) {
+    void vscode.window.showWarningMessage(
+      "Pick a conversation in the Standarflow tree to rename it.",
+    );
+    return;
+  }
+  const c = conv.conversation;
+  const label = await vscode.window.showInputBox({
+    title: "Rename conversation",
+    prompt: "Human-friendly label. Leave empty to clear and fall back to the id.",
+    value: c.client_label ?? "",
+  });
+  if (label === undefined) return;
+  const trimmed = label.trim();
+  await ctx.client.conversationSetLabel(c.id, trimmed === "" ? null : trimmed);
+  void vscode.window.showInformationMessage(
+    trimmed === ""
+      ? "Conversation label cleared."
+      : `Conversation renamed to "${trimmed}".`,
+  );
 }

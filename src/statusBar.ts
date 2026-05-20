@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { matcher } from "matchigo";
-import type { FocusedSession, WorkspaceInfo } from "./mcpClient";
+import type { WorkspaceInfo } from "./mcpClient";
 
 export type ConnectionState =
   | { kind: "disconnected" }
@@ -43,7 +43,7 @@ export class StandarflowStatusBar implements vscode.Disposable {
     this.set({ kind: "disconnected" });
 
     this.focusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 99);
-    this.focusItem.command = "standarflow.sessionFocusPick";
+    this.focusItem.command = "workbench.view.extension.standarflow";
     this.focusItem.hide();
   }
 
@@ -53,20 +53,15 @@ export class StandarflowStatusBar implements vscode.Disposable {
     this.item.tooltip = tooltip;
   }
 
-  setFocus(focused: FocusedSession | null): void {
-    if (!focused) {
-      this.focusItem.text = "$(target) no focus";
-      this.focusItem.tooltip =
-        "No standarflow session pinned for this conversation. Click to pick one — hook-driven file changes attach here.";
-      this.focusItem.show();
+  setFocusCount(count: number): void {
+    if (count <= 0) {
+      this.focusItem.hide();
       return;
     }
-    this.focusItem.text = `$(target) ${focused.group_path}/${focused.session_slug}`;
+    this.focusItem.text = `$(target) ${count} focused`;
     this.focusItem.tooltip =
-      `Focused session: ${focused.group_path}/${focused.session_slug}\n` +
-      `${focused.session_kind} · ${focused.session_status}\n` +
-      `Conversation: ${focused.provider} · conv#${focused.conversation_id}\n` +
-      `Click to change or clear.`;
+      `${count} conversation(s) have a pinned standarflow session.\n` +
+      "Open the Standarflow view to manage focus per conversation.";
     this.focusItem.show();
   }
 

@@ -242,10 +242,10 @@ function installDbWatcher(dbPath: string): void {
 async function refreshFocus(): Promise<void> {
   if (!client || !statusBar) return;
   try {
-    const focused = await client.sessionFocused();
-    statusBar.setFocus(focused);
+    const focuses = await client.focusList();
+    statusBar.setFocusCount(focuses.length);
   } catch {
-    // Older binaries don't expose session_focused yet — hide the item
+    // Older binaries don't expose focus_list yet — hide the item
     // instead of erroring out.
     statusBar.hideFocus();
   }
