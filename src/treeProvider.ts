@@ -71,13 +71,17 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
       return [];
     }
     if (!node) {
-      const groups = await client.groupList();
+      const [groups, convs] = await Promise.all([
+        client.groupList(),
+        client.conversationList(),
+      ]);
+      const liveCount = convs.filter((c) => c.is_live).length;
       const groupNodes: TreeNode[] = groups.map((g) => ({
         kind: "group",
         path: g.slug,
         group: g,
       }));
-      return [{ kind: "conversationsRoot" }, ...groupNodes];
+      return [{ kind: "conversationsRoot", liveCount }, ...groupNodes];
     }
     const childrenOf = matcher<TreeNode, Promise<TreeNode[]>>()
       .with({ kind: "conversationsRoot" }, async () => {
@@ -97,9 +101,10 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
           }));
       })
       .with({ kind: "group" }, async (n) => {
-        const [subgroups, sessions] = await Promise.all([
+        const [subgroups, sessions, info] = await Promise.all([
           client.groupList(n.path),
           client.sessionList(n.path),
+          client.workspaceInfo(),
         ]);
         const subgroupNodes: TreeNode[] = subgroups.map((g) => ({
           kind: "group",
@@ -108,7 +113,12 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
         }));
         const sessionNodes: TreeNode[] = sessions
           .filter((s) => s.parent_session_id === null)
-          .map((s) => ({ kind: "session", groupPath: n.path, session: s }));
+          .map((s) => ({
+            kind: "session",
+            groupPath: n.path,
+            session: s,
+            isCurrent: s.id === info.current_session_id,
+          }));
         return [...subgroupNodes, ...sessionNodes];
       })
       .with({ kind: "session" }, (n) =>

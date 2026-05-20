@@ -13,6 +13,9 @@ export interface WorkspaceInfo {
   sessions_count: number;
   file_refs_count: number;
   conversations_count: number;
+  /// The workspace's current session pointer, or null before the first focus
+  /// on a build carrying the pointer.
+  current_session_id: number | null;
   first_run: boolean;
 }
 

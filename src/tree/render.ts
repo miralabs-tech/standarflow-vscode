@@ -70,15 +70,18 @@ function conversationLabel(c: Conversation): string {
 }
 
 export const renderNode = matcher<TreeNode, vscode.TreeItem>()
-  .with({ kind: "conversationsRoot" }, () => {
+  .with({ kind: "conversationsRoot" }, (n) => {
     const item = new vscode.TreeItem(
       "Conversations",
       vscode.TreeItemCollapsibleState.Collapsed,
     );
     item.id = "conversationsRoot";
     item.iconPath = new vscode.ThemeIcon("comment-discussion");
+    item.description = `${n.liveCount} live`;
     item.contextValue = "standarflow.conversationsRoot";
-    item.tooltip = "AI chats known to this workspace and the session each one focuses.";
+    item.tooltip =
+      `AI chats known to this workspace and the session each one focuses.\n` +
+      `${n.liveCount} chat(s) currently live — each is a separate agent process.`;
     return item;
   })
   .with({ kind: "conversation" }, (n) => {
@@ -135,8 +138,12 @@ export const renderNode = matcher<TreeNode, vscode.TreeItem>()
     item.id = `session:${n.session.id}`;
     item.iconPath = sessionIcon(n.session);
     const byTag = n.session.created_by ? ` · ${n.session.created_by}` : "";
-    item.description = `${n.session.kind} · ${n.session.status}${byTag}`;
-    item.tooltip = `Session #${n.session.id} (${n.session.kind}, ${n.session.status})${n.session.created_by ? `\nCreated by ${n.session.created_by}` : ""}`;
+    const currentTag = n.isCurrent ? "★ current · " : "";
+    item.description = `${currentTag}${n.session.kind} · ${n.session.status}${byTag}`;
+    item.tooltip =
+      `Session #${n.session.id} (${n.session.kind}, ${n.session.status})` +
+      (n.isCurrent ? "\nWorkspace current session" : "") +
+      (n.session.created_by ? `\nCreated by ${n.session.created_by}` : "");
     item.contextValue = `standarflow.session.${n.session.status}`;
     item.command = {
       command: "standarflow.openSession",

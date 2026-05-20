@@ -8,10 +8,10 @@ import type {
 } from "../mcpClient";
 
 export type TreeNode =
-  | { kind: "conversationsRoot" }
+  | { kind: "conversationsRoot"; liveCount: number }
   | { kind: "conversation"; conversation: Conversation; focus: FocusEntry | null }
   | { kind: "group"; path: string; group: GroupRow }
-  | { kind: "session"; groupPath: string; session: SessionLite }
+  | { kind: "session"; groupPath: string; session: SessionLite; isCurrent: boolean }
   | { kind: "artefact"; groupPath: string; parent: SessionLite; artefact: SessionLite }
   | { kind: "fileRef"; groupPath: string; sessionSlug: string; file: FileRefRow }
   | { kind: "fileChangeGroup"; groupPath: string; session: SessionLite; changes: FileChange[] }
