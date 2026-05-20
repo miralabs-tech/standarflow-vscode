@@ -426,11 +426,15 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
           client.focusList(),
         ]);
         const focusByConv = new Map(focuses.map((f) => [f.conversation_id, f]));
-        return convs.map((c) => ({
-          kind: "conversation",
-          conversation: c,
-          focus: focusByConv.get(c.id) ?? null,
-        }));
+        // Only live conversations are surfaced — a closed chat's row (and its
+        // focus) stays in the DB as history but no longer clutters the tree.
+        return convs
+          .filter((c) => c.is_live)
+          .map((c) => ({
+            kind: "conversation",
+            conversation: c,
+            focus: focusByConv.get(c.id) ?? null,
+          }));
       })
       .with({ kind: "group" }, async (n) => {
         const [subgroups, sessions] = await Promise.all([

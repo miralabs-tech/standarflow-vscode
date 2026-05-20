@@ -88,6 +88,9 @@ export interface FocusedSession {
   session_status: SessionStatus;
   focused_at: number;
   pending_session_id: number | null;
+  /// false when this is the workspace's inherited suggestion (no focus row
+  /// yet) rather than a confirmed focus.
+  confirmed: boolean;
 }
 
 /// One conversation's focused session, as returned by `focus_list` — the
@@ -106,6 +109,8 @@ export interface FocusEntry {
   session_kind: string;
   session_status: SessionStatus;
   focused_at: number;
+  /// Whether the conversation's agent process is still running.
+  is_live: boolean;
 }
 
 export interface FileRefRow {
@@ -153,6 +158,9 @@ export interface Conversation {
   ended_at: number | null;
   last_pid: number | null;
   last_conversation_pid: number | null;
+  /// Whether the conversation's agent process is still running. Computed by
+  /// the MCP server from the live process set, not stored.
+  is_live: boolean;
 }
 
 export interface Participant {
