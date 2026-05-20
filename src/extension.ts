@@ -243,7 +243,9 @@ async function refreshFocus(): Promise<void> {
   if (!client || !statusBar) return;
   try {
     const focuses = await client.focusList();
-    statusBar.setFocusCount(focuses.length);
+    // Count only focus rows whose conversation is still live — dead chats
+    // keep their focus row in the DB as history but must not inflate the badge.
+    statusBar.setFocusCount(focuses.filter((f) => f.is_live).length);
   } catch {
     // Older binaries don't expose focus_list yet — hide the item
     // instead of erroring out.
