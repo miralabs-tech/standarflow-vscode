@@ -1,0 +1,363 @@
+{
+  "name": "standarflow",
+  "displayName": "standarflow",
+  "description": "Session, artefact and file-reference store for AI-assisted work.",
+  "publisher": "miralabs-tech",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.105.0"
+  },
+  "categories": ["Other"],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "configuration": {
+      "title": "Standarflow",
+      "properties": {
+        "standarflow.binPath": {
+          "type": "string",
+          "default": "",
+          "description": "Path to the standarflow binary. Empty = use the binary bundled with the extension (dist/bin/standarflow[.exe]). Falls back to 'standarflow' on PATH if the bundled binary is missing."
+        },
+        "standarflow.dbPath": {
+          "type": "string",
+          "default": "",
+          "description": "Absolute path to the SQLite DB. Leave empty to use ${workspaceFolder}/.standarflow/standarflow.db."
+        },
+        "standarflow.defaultGroup": {
+          "type": "string",
+          "default": "",
+          "description": "Slug path of the group to focus by default (e.g. backend/auth)."
+        },
+        "standarflow.autoRefreshMs": {
+          "type": "integer",
+          "default": 0,
+          "description": "Auto-refresh interval in ms. 0 disables auto-refresh."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "standarflow.openSettings",
+        "title": "Standarflow: Open Settings"
+      },
+      {
+        "command": "standarflow.reconnect",
+        "title": "Standarflow: Reconnect"
+      },
+      {
+        "command": "standarflow.showWorkspaceInfo",
+        "title": "Standarflow: Show Workspace Info"
+      },
+      {
+        "command": "standarflow.refreshTree",
+        "title": "Standarflow: Refresh Tree",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "standarflow.openSession",
+        "title": "Standarflow: Open Session"
+      },
+      {
+        "command": "standarflow.generateMcpConfig",
+        "title": "Standarflow: Generate .mcp.json"
+      },
+      {
+        "command": "standarflow.disconnect",
+        "title": "Standarflow: Disconnect"
+      },
+      {
+        "command": "standarflow.deleteDb",
+        "title": "Standarflow: Delete Database"
+      },
+      {
+        "command": "standarflow.groupCreate",
+        "title": "Standarflow: Create Group",
+        "icon": "$(new-folder)"
+      },
+      {
+        "command": "standarflow.sessionSave",
+        "title": "Standarflow: Save Session",
+        "icon": "$(save)"
+      },
+      {
+        "command": "standarflow.fileAttach",
+        "title": "Standarflow: Attach File to Session",
+        "icon": "$(file-add)"
+      },
+      {
+        "command": "standarflow.memoryImport",
+        "title": "Standarflow: Import Memory Folder",
+        "icon": "$(folder-library)"
+      },
+      {
+        "command": "standarflow.detachFileRef",
+        "title": "Standarflow: Detach File Reference",
+        "icon": "$(close)"
+      },
+      {
+        "command": "standarflow.groupDelete",
+        "title": "Standarflow: Delete Group",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "standarflow.sessionRename",
+        "title": "Standarflow: Rename Session",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "standarflow.sessionMove",
+        "title": "Standarflow: Move Session to Group",
+        "icon": "$(arrow-right)"
+      },
+      {
+        "command": "standarflow.sessionReparent",
+        "title": "Standarflow: Reparent Session",
+        "icon": "$(type-hierarchy)"
+      },
+      {
+        "command": "standarflow.sessionSetKind",
+        "title": "Standarflow: Change Session Kind",
+        "icon": "$(symbol-misc)"
+      },
+      {
+        "command": "standarflow.sessionSetStatus",
+        "title": "Standarflow: Change Session Status",
+        "icon": "$(circle-large-outline)"
+      },
+      {
+        "command": "standarflow.sessionDelete",
+        "title": "Standarflow: Delete Session",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "standarflow.sessionEditBody",
+        "title": "Standarflow: Edit Session Body",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "standarflow.fileClaim",
+        "title": "Standarflow: Claim File Reference",
+        "icon": "$(account)"
+      },
+      {
+        "command": "standarflow.fileDeleteWithSource",
+        "title": "Standarflow: Delete File Reference and Source",
+        "icon": "$(trash)"
+      },
+      {
+        "command": "standarflow.sessionFocus",
+        "title": "Standarflow: Focus Session",
+        "icon": "$(target)"
+      },
+      {
+        "command": "standarflow.sessionUnfocus",
+        "title": "Standarflow: Clear Focus"
+      },
+      {
+        "command": "standarflow.sessionFocusPick",
+        "title": "Standarflow: Pick Focus Session…"
+      },
+      {
+        "command": "standarflow.copySessionReference",
+        "title": "Standarflow: Copy Session Reference",
+        "icon": "$(copy)"
+      },
+      {
+        "command": "standarflow.copySessionSlug",
+        "title": "Standarflow: Copy Session Slug"
+      },
+      {
+        "command": "standarflow.copyGroupPath",
+        "title": "Standarflow: Copy Group Path"
+      },
+      {
+        "command": "standarflow.copyFileRefPath",
+        "title": "Standarflow: Copy File Path"
+      },
+      {
+        "command": "standarflow.installClaudeHooks",
+        "title": "Standarflow: Install Claude Code Hooks"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "standarflow",
+          "title": "Standarflow",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "standarflow": [
+        {
+          "id": "standarflow.tree",
+          "name": "Workspace",
+          "icon": "media/icon.svg",
+          "contextualTitle": "Standarflow"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "standarflow.tree",
+        "contents": "No groups yet — or the tree wasn't refreshed since another client wrote.\n\n[Create your first group](command:standarflow.groupCreate)\n[Refresh tree](command:standarflow.refreshTree)\n\nClick a session/artefact in the tree to open it in the webview viewer."
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "standarflow.groupCreate",
+          "when": "view == standarflow.tree",
+          "group": "navigation@1"
+        },
+        {
+          "command": "standarflow.refreshTree",
+          "when": "view == standarflow.tree",
+          "group": "navigation@2"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "standarflow.groupCreate",
+          "when": "view == standarflow.tree && viewItem == standarflow.group",
+          "group": "1_create@1"
+        },
+        {
+          "command": "standarflow.sessionSave",
+          "when": "view == standarflow.tree && viewItem == standarflow.group",
+          "group": "1_create@2"
+        },
+        {
+          "command": "standarflow.groupDelete",
+          "when": "view == standarflow.tree && viewItem == standarflow.group",
+          "group": "9_destructive@1"
+        },
+        {
+          "command": "standarflow.sessionSave",
+          "when": "view == standarflow.tree && viewItem =~ /^standarflow\\.session/",
+          "group": "1_create@1"
+        },
+        {
+          "command": "standarflow.fileAttach",
+          "when": "view == standarflow.tree && viewItem =~ /^standarflow\\.session/",
+          "group": "1_create@2"
+        },
+        {
+          "command": "standarflow.memoryImport",
+          "when": "view == standarflow.tree && viewItem =~ /^standarflow\\.session/",
+          "group": "1_create@3"
+        },
+        {
+          "command": "standarflow.sessionEditBody",
+          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
+          "group": "2_edit@1"
+        },
+        {
+          "command": "standarflow.sessionRename",
+          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
+          "group": "2_edit@2"
+        },
+        {
+          "command": "standarflow.sessionSetKind",
+          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
+          "group": "2_edit@3"
+        },
+        {
+          "command": "standarflow.sessionSetStatus",
+          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
+          "group": "2_edit@4"
+        },
+        {
+          "command": "standarflow.sessionMove",
+          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
+          "group": "3_relocate@1"
+        },
+        {
+          "command": "standarflow.sessionReparent",
+          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
+          "group": "3_relocate@2"
+        },
+        {
+          "command": "standarflow.sessionFocus",
+          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
+          "group": "4_focus@1"
+        },
+        {
+          "command": "standarflow.copySessionReference",
+          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
+          "group": "5_copy@1"
+        },
+        {
+          "command": "standarflow.copySessionSlug",
+          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
+          "group": "5_copy@2"
+        },
+        {
+          "command": "standarflow.copyGroupPath",
+          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
+          "group": "5_copy@3"
+        },
+        {
+          "command": "standarflow.copyGroupPath",
+          "when": "view == standarflow.tree && viewItem == standarflow.group",
+          "group": "5_copy@1"
+        },
+        {
+          "command": "standarflow.copyFileRefPath",
+          "when": "view == standarflow.tree && viewItem == standarflow.fileRef",
+          "group": "5_copy@1"
+        },
+        {
+          "command": "standarflow.sessionDelete",
+          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
+          "group": "9_destructive@1"
+        },
+        {
+          "command": "standarflow.fileClaim",
+          "when": "view == standarflow.tree && viewItem == standarflow.fileRef",
+          "group": "2_edit@1"
+        },
+        {
+          "command": "standarflow.detachFileRef",
+          "when": "view == standarflow.tree && viewItem == standarflow.fileRef",
+          "group": "9_destructive@1"
+        },
+        {
+          "command": "standarflow.fileDeleteWithSource",
+          "when": "view == standarflow.tree && viewItem == standarflow.fileRef",
+          "group": "9_destructive@2"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "bun run build",
+    "build": "node esbuild.config.mjs",
+    "watch": "node esbuild.config.mjs --watch",
+    "compile": "tsc -b",
+    "build:rust": "cargo build --release -p standarflow-cli",
+    "copy:bin": "bun scripts/copy-bin.ts",
+    "package": "vsce package --no-dependencies --no-rewrite-relative-links --out standarflow.vsix",
+    "install:local": "bun run build:rust && bun run build && bun run copy:bin && bun run package && bun scripts/install-vsix.ts"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "markdown-it": "^14.1.1",
+    "matchigo": "^1.0.2",
+    "preact": "^10.29.2"
+  },
+  "devDependencies": {
+    "@types/markdown-it": "^14.1.2",
+    "@types/node": "^25.9.0",
+    "@types/vscode": "^1.105.0",
+    "bun-types": "^1.3.14",
+    "esbuild": "^0.28.0",
+    "esbuild-sass-plugin": "^3.7.0",
+    "sass": "^1.99.0",
+    "typescript": "^6.0.3"
+  }
+}

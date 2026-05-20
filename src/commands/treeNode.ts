@@ -1,0 +1,65 @@
+import { matcher } from "matchigo";
+import type { TreeNode } from "../treeProvider";
+
+export type FileRefNode = Extract<TreeNode, { kind: "fileRef" }>;
+
+export interface SessionSelection {
+  groupPath: string;
+  slug: string;
+}
+
+const groupPathOf = matcher<TreeNode, string>()
+  .with({ kind: "group" }, (n) => n.path)
+  .with({ kind: "session" }, (n) => n.groupPath)
+  .with({ kind: "artefact" }, (n) => n.groupPath)
+  .with({ kind: "fileRef" }, (n) => n.groupPath)
+  .with({ kind: "fileChangeGroup" }, (n) => n.groupPath)
+  .with({ kind: "fileChange" }, (n) => n.groupPath)
+  .exhaustive();
+
+const sessionSlugOf = matcher<TreeNode, string | undefined>()
+  .with({ kind: "group" }, () => undefined)
+  .with({ kind: "session" }, (n) => n.session.slug)
+  .with({ kind: "artefact" }, (n) => n.artefact.slug)
+  .with({ kind: "fileRef" }, (n) => n.sessionSlug)
+  .with({ kind: "fileChangeGroup" }, (n) => n.session.slug)
+  .with({ kind: "fileChange" }, () => undefined)
+  .exhaustive();
+
+const kindOf = matcher<TreeNode, string | undefined>()
+  .with({ kind: "group" }, () => undefined)
+  .with({ kind: "session" }, (n) => n.session.kind)
+  .with({ kind: "artefact" }, (n) => n.artefact.kind)
+  .with({ kind: "fileRef" }, () => undefined)
+  .with({ kind: "fileChangeGroup" }, () => undefined)
+  .with({ kind: "fileChange" }, () => undefined)
+  .exhaustive();
+
+const selectionOf = matcher<TreeNode, SessionSelection | undefined>()
+  .with({ kind: "group" }, () => undefined)
+  .with({ kind: "session" }, (n) => ({ groupPath: n.groupPath, slug: n.session.slug }))
+  .with({ kind: "artefact" }, (n) => ({ groupPath: n.groupPath, slug: n.artefact.slug }))
+  .with({ kind: "fileRef" }, () => undefined)
+  .with({ kind: "fileChangeGroup" }, () => undefined)
+  .with({ kind: "fileChange" }, () => undefined)
+  .exhaustive();
+
+export function nodeGroupPath(node: TreeNode | undefined): string | undefined {
+  return node ? groupPathOf(node) : undefined;
+}
+
+export function nodeSessionSlug(node: TreeNode | undefined): string | undefined {
+  return node ? sessionSlugOf(node) : undefined;
+}
+
+export function nodeKind(node: TreeNode | undefined): string | undefined {
+  return node ? kindOf(node) : undefined;
+}
+
+export function nodeSelection(node: TreeNode | undefined): SessionSelection | undefined {
+  return node ? selectionOf(node) : undefined;
+}
+
+export function nodeFileRef(node: TreeNode | undefined): FileRefNode | undefined {
+  return node?.kind === "fileRef" ? node : undefined;
+}
