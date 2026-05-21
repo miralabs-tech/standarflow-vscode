@@ -15,6 +15,7 @@ export type TreeNode =
       focus: FocusEntry | null;
       isGhost: boolean;
     }
+  | { kind: "endedConversationsRoot"; count: number }
   | { kind: "group"; path: string; group: GroupRow }
   | { kind: "session"; groupPath: string; session: SessionLite; isCurrent: boolean }
   | { kind: "artefact"; groupPath: string; parent: SessionLite; artefact: SessionLite }

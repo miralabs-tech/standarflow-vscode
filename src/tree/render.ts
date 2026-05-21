@@ -90,6 +90,18 @@ export const renderNode = matcher<TreeNode, vscode.TreeItem>()
         : "");
     return item;
   })
+  .with({ kind: "endedConversationsRoot" }, (n) => {
+    const item = new vscode.TreeItem(
+      "Ended",
+      vscode.TreeItemCollapsibleState.Collapsed,
+    );
+    item.id = "endedConversationsRoot";
+    item.iconPath = new vscode.ThemeIcon("history");
+    item.description = `${n.count}`;
+    item.tooltip = `${n.count} conversation(s) whose agent process has exited — kept as history.`;
+    item.contextValue = "standarflow.endedConversationsRoot";
+    return item;
+  })
   .with({ kind: "conversation" }, (n) => {
     const c = n.conversation;
     const ended = c.ended_at !== null;

@@ -167,6 +167,16 @@
         "icon": "$(target)"
       },
       {
+        "command": "standarflow.adoptCurrentSession",
+        "title": "Standarflow: Adopt Current Session",
+        "icon": "$(target)"
+      },
+      {
+        "command": "standarflow.focusConversationHere",
+        "title": "Standarflow: Focus a Conversation Here",
+        "icon": "$(target)"
+      },
+      {
         "command": "standarflow.conversationUnfocus",
         "title": "Standarflow: Clear Conversation Focus",
         "icon": "$(x)"
@@ -323,9 +333,19 @@
           "group": "3_relocate@2"
         },
         {
+          "command": "standarflow.focusConversationHere",
+          "when": "view == standarflow.tree && (viewItem =~ /^standarflow\\.session/ || viewItem == standarflow.artefact)",
+          "group": "4_focus@1"
+        },
+        {
           "command": "standarflow.conversationFocus",
           "when": "view == standarflow.tree && viewItem =~ /^standarflow\\.conversation\\./",
           "group": "1_focus@1"
+        },
+        {
+          "command": "standarflow.adoptCurrentSession",
+          "when": "view == standarflow.tree && viewItem == standarflow.conversation.unfocused",
+          "group": "1_focus@3"
         },
         {
           "command": "standarflow.conversationUnfocus",

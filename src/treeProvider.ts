@@ -151,15 +151,34 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
           client.focusList(),
         ]);
         const focusByConv = new Map(focuses.map((f) => [f.conversation_id, f]));
-        // Only live conversations are surfaced — a closed chat's row (and its
-        // focus) stays in the DB as history but no longer clutters the tree.
-        return convs
+        // Live conversations are surfaced directly; ended ones (their agent
+        // process has exited) are folded under a collapsed "Ended" node.
+        const liveNodes: TreeNode[] = convs
           .filter((c) => c.is_live)
           .map((c) => ({
             kind: "conversation",
             conversation: c,
             focus: focusByConv.get(c.id) ?? null,
             isGhost: isGhost(c),
+          }));
+        const endedCount = convs.filter((c) => !c.is_live).length;
+        return endedCount > 0
+          ? [...liveNodes, { kind: "endedConversationsRoot", count: endedCount }]
+          : liveNodes;
+      })
+      .with({ kind: "endedConversationsRoot" }, async () => {
+        const [convs, focuses] = await Promise.all([
+          client.conversationList(),
+          client.focusList(),
+        ]);
+        const focusByConv = new Map(focuses.map((f) => [f.conversation_id, f]));
+        return convs
+          .filter((c) => !c.is_live)
+          .map((c) => ({
+            kind: "conversation",
+            conversation: c,
+            focus: focusByConv.get(c.id) ?? null,
+            isGhost: false,
           }));
       })
       .with({ kind: "group" }, async (n) => {

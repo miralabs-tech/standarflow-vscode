@@ -4,10 +4,12 @@ import type { TreeNode } from "../treeProvider";
 import { copyFileRefPath, copyGroupPath, copySessionReference, copySessionSlug } from "./clipboard";
 import { detachFileRef, fileAttach, fileClaim, fileDeleteWithSource, memoryImport } from "./file";
 import {
+  adoptCurrentSession,
   conversationFocus,
   conversationKill,
   conversationRename,
   conversationUnfocus,
+  focusConversationHere,
   killGhostConversations,
 } from "./focus";
 import { groupCreate, groupDelete } from "./group";
@@ -49,6 +51,8 @@ const TABLE: CommandDesc[] = [
   { id: "standarflow.fileClaim", run: fileClaim, post: "tree" },
   { id: "standarflow.fileDeleteWithSource", run: fileDeleteWithSource, post: "tree" },
   { id: "standarflow.conversationFocus", run: conversationFocus, post: "focus" },
+  { id: "standarflow.adoptCurrentSession", run: adoptCurrentSession, post: "focus" },
+  { id: "standarflow.focusConversationHere", run: focusConversationHere, post: "focus" },
   { id: "standarflow.conversationUnfocus", run: conversationUnfocus, post: "focus" },
   { id: "standarflow.conversationRename", run: conversationRename, post: "tree" },
   { id: "standarflow.conversationKill", run: conversationKill, post: "focus" },
