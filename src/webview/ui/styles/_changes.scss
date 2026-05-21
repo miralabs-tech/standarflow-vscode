@@ -1,0 +1,31 @@
+.change {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-size: 0.88rem;
+
+  &__op {
+    background: var(--vscode-textCodeBlock-background);
+    padding: 0.05rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+
+  &__name {
+    font-family: var(--vscode-editor-font-family);
+    font-weight: 600;
+  }
+
+  &__tool {
+    color: var(--vscode-descriptionForeground);
+    font-size: 0.82rem;
+  }
+
+  &__time {
+    font-family: var(--vscode-editor-font-family);
+    color: var(--vscode-descriptionForeground);
+    font-size: 0.82rem;
+  }
+}

@@ -1,0 +1,27 @@
+.md-view {
+  &__header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--vscode-panel-border);
+  }
+
+  &__path {
+    font-family: var(--vscode-editor-font-family);
+    font-size: 0.8rem;
+    color: var(--vscode-descriptionForeground);
+    margin-bottom: 0.25rem;
+  }
+
+  &__title {
+    margin: 0 0 0.75rem 0;
+    font-size: 1.6rem;
+    font-weight: 600;
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+  }
+}

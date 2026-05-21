@@ -1,0 +1,55 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+
+  &__error {
+    margin: 0.75rem 1rem 0;
+    padding: 0.5rem 0.75rem;
+    background: var(--vscode-inputValidation-errorBackground, transparent);
+    border: 1px solid var(--vscode-errorForeground);
+    color: var(--vscode-errorForeground);
+    border-radius: 3px;
+    font-size: 0.88rem;
+  }
+}
+
+.navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--vscode-editor-background);
+  border-bottom: 1px solid var(--vscode-panel-border);
+  font-family: var(--vscode-font-family);
+  font-size: 0.85rem;
+
+  &__crumbs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    color: var(--vscode-descriptionForeground);
+  }
+
+  &__crumb {
+    &::after {
+      content: " ›";
+      margin-left: 0.25rem;
+      color: var(--vscode-descriptionForeground);
+    }
+
+    &:last-child::after {
+      content: "";
+    }
+
+    &--current {
+      color: var(--vscode-foreground);
+      font-weight: 600;
+    }
+  }
+}

@@ -12,7 +12,7 @@ type Rendered = { text: string; tooltip: string };
 
 const renderState = matcher<ConnectionState, Rendered>()
   .with({ kind: "disconnected" }, () => ({
-    text: "$(database) standarflow: idle",
+    text: "$(standarflow-logo) standarflow: idle",
     tooltip: "Not connected.",
   }))
   .with({ kind: "connecting" }, () => ({
@@ -20,11 +20,12 @@ const renderState = matcher<ConnectionState, Rendered>()
     tooltip: "Spawning standarflow binary…",
   }))
   .with({ kind: "ready" }, (s) => ({
-    text: `$(database) standarflow: ${s.info.groups_count}g · ${s.info.sessions_count}s`,
+    text: `$(standarflow-logo) ${s.info.groups_count}g · ${s.info.sessions_count}s`,
     tooltip:
+      `Standarflow — ${s.info.groups_count} group(s) · ${s.info.sessions_count} session(s)\n` +
       `DB: ${s.info.db_path}\n` +
       `Schema v${s.info.schema_version}\n` +
-      `${s.info.file_refs_count} file refs · ${s.info.conversations_count} conversations`,
+      `${s.info.file_refs_count} file ref(s) · ${s.info.conversations_count} conversation(s)`,
   }))
   .with({ kind: "error" }, (s) => ({
     text: "$(error) standarflow: error",
@@ -63,11 +64,11 @@ export class StandarflowStatusBar implements vscode.Disposable {
 
   private render(): void {
     const { text, tooltip } = renderState(this.state);
-    const showFocus = this.focusCount > 0 && this.state.kind === "ready";
-    this.item.text = showFocus ? `${text} · $(target) ${this.focusCount}` : text;
+    const ready = this.state.kind === "ready";
+    this.item.text = ready ? `${text} · ${this.focusCount}f` : text;
     this.item.tooltip =
       tooltip +
-      (showFocus ? `\n${this.focusCount} conversation(s) with a pinned session` : "") +
+      (ready ? `\n${this.focusCount} conversation(s) with a pinned session` : "") +
       "\n— Click for actions —";
   }
 

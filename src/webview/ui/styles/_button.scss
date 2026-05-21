@@ -1,0 +1,32 @@
+.btn {
+  padding: 0.3rem 0.85rem;
+  border: 1px solid var(--vscode-button-border, transparent);
+  background: var(--vscode-button-secondaryBackground, var(--vscode-editorWidget-background));
+  color: var(--vscode-button-secondaryForeground, var(--vscode-foreground));
+  font: inherit;
+  border-radius: 3px;
+  cursor: pointer;
+
+  &:hover {
+    background: var(--vscode-button-secondaryHoverBackground, var(--vscode-list-hoverBackground));
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+
+  &--primary {
+    background: var(--vscode-button-background);
+    color: var(--vscode-button-foreground);
+
+    &:hover {
+      background: var(--vscode-button-hoverBackground);
+    }
+  }
+
+  &--tiny {
+    padding: 0.15rem 0.55rem;
+    font-size: 0.78rem;
+  }
+}

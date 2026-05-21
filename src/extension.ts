@@ -1,6 +1,7 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { showActionsMenu } from "./actionsMenu";
+import { ensureBinary } from "./binaryManager";
 import { registerCommands } from "./commands";
 import { installClaudeHooks } from "./commands/hooks";
 import { readConfig } from "./config";
@@ -18,13 +19,13 @@ let treeView: vscode.TreeView<TreeNode> | undefined;
 let webviewHost: SessionWebviewHost | undefined;
 let autoRefreshTimer: NodeJS.Timeout | undefined;
 let lastInfo: WorkspaceInfo | undefined;
-let extensionPath = "";
+let extensionContext: vscode.ExtensionContext | undefined;
 let dbWatchers: vscode.Disposable[] = [];
 let syncDebounce: NodeJS.Timeout | undefined;
 let lastSyncTs = 0;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
-  extensionPath = context.extensionPath;
+  extensionContext = context;
   statusBar = new StandarflowStatusBar();
   context.subscriptions.push(statusBar);
 
@@ -99,8 +100,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       void vscode.window.showInformationMessage("Standarflow disconnected.");
     }),
     vscode.commands.registerCommand("standarflow.installClaudeHooks", async () => {
-      const cfg = readConfig(extensionPath);
-      await installClaudeHooks(cfg.binPath);
+      await installClaudeHooks(await ensureBinary(context, readConfig().binPath));
     }),
     vscode.commands.registerCommand("standarflow.generateMcpConfig", async () => {
       const folder = vscode.workspace.workspaceFolders?.[0];
@@ -110,9 +110,9 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
         );
         return;
       }
-      const cfg = readConfig(extensionPath);
       try {
-        const result = await generateMcpConfig(folder, cfg.binPath);
+        const binPath = await ensureBinary(context, readConfig().binPath);
+        const result = await generateMcpConfig(folder, binPath);
         switch (result.kind) {
           case "created":
             void vscode.window.showInformationMessage(
@@ -137,7 +137,7 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
       }
     }),
     vscode.commands.registerCommand("standarflow.deleteDb", async () => {
-      const cfg = readConfig(extensionPath);
+      const cfg = readConfig();
       const confirm = await vscode.window.showWarningMessage(
         `Delete the standarflow database at ${cfg.dbPath}?`,
         {
@@ -354,14 +354,15 @@ async function revealCurrentSession(): Promise<void> {
 }
 
 async function connect(): Promise<void> {
-  if (!statusBar) {
+  if (!statusBar || !extensionContext) {
     return;
   }
   statusBar.set({ kind: "connecting" });
   try {
-    const cfg = readConfig(extensionPath);
+    const cfg = readConfig();
+    const binPath = await ensureBinary(extensionContext, cfg.binPath);
     client = new StandarflowClient();
-    await client.connect(cfg.binPath, cfg.dbPath);
+    await client.connect(binPath, cfg.dbPath);
     const info = await probeWorkspace(client);
     lastInfo = info;
     statusBar.set({ kind: "ready", info });

@@ -1,14 +1,17 @@
 import { render } from "preact";
 import { useEffect, useState } from "preact/hooks";
-import { SessionView } from "./SessionView";
-import { MdView } from "./MdView";
+import { MdView } from "./components/MdView";
+import { NavBar } from "./components/NavBar";
+import { SessionView } from "./components/SessionView";
+import { basename } from "./lib/format";
 import type {
   HostToWebview,
   LinkPeer,
+  MdEntry,
   ViewState,
   WebviewToHost,
 } from "./types";
-import "./styles.scss";
+import "./styles/index.scss";
 
 interface VsCodeApi {
   postMessage(msg: WebviewToHost): void;
@@ -19,11 +22,6 @@ declare global {
 }
 
 const vscode = acquireVsCodeApi();
-
-type InlineMdEntry =
-  | { kind: "loading" }
-  | { kind: "ok"; content: string }
-  | { kind: "err"; message: string };
 
 function viewLabel(v: ViewState): string {
   switch (v.kind) {
@@ -38,14 +36,9 @@ function viewLabel(v: ViewState): string {
   }
 }
 
-function basename(p: string): string {
-  const idx = Math.max(p.lastIndexOf("/"), p.lastIndexOf("\\"));
-  return idx >= 0 ? p.slice(idx + 1) : p;
-}
-
 function App() {
   const [stack, setStack] = useState<ViewState[]>([]);
-  const [inlineMd, setInlineMd] = useState<Record<number, InlineMdEntry | undefined>>({});
+  const [inlineMd, setInlineMd] = useState<Record<number, MdEntry | undefined>>({});
   const [error, setError] = useState<string | undefined>(undefined);
 
   useEffect(() => {
@@ -53,12 +46,9 @@ function App() {
       const msg = e.data;
       setError(undefined);
       if (msg.type === "init") {
-        // Replace whole stack with the initial session.
         setStack([{ kind: "session", data: msg.data }]);
       } else if (msg.type === "pushSessionData") {
         setStack((prev) => {
-          // If the top is a session-loading placeholder for this target,
-          // replace it. Otherwise push.
           const top = prev[prev.length - 1];
           if (
             top?.kind === "session-loading" &&
@@ -89,7 +79,6 @@ function App() {
         }));
       } else if (msg.type === "navigationError") {
         setError(msg.message);
-        // Drop any loading frame so the user goes back to a stable view.
         setStack((prev) => {
           const top = prev[prev.length - 1];
           if (top?.kind === "session-loading" || top?.kind === "md-loading") {
@@ -105,11 +94,10 @@ function App() {
   }, []);
 
   if (stack.length === 0) {
-    return <div class="session-view__loading">Loading…</div>;
+    return <div class="loading">Loading…</div>;
   }
 
   const top = stack[stack.length - 1]!;
-  const canGoBack = stack.length > 1;
 
   const goBack = () => setStack((prev) => prev.slice(0, -1));
   const goRoot = () => setStack((prev) => (prev.length > 1 ? [prev[0]!] : prev));
@@ -127,10 +115,7 @@ function App() {
   };
 
   const navigateMd = (fileRefId: number, path: string) => {
-    setStack((prev) => [
-      ...prev,
-      { kind: "md-loading", fileRefId, path },
-    ]);
+    setStack((prev) => [...prev, { kind: "md-loading", fileRefId, path }]);
     vscode.postMessage({ type: "requestMd", fileRefId, path });
   };
 
@@ -146,46 +131,22 @@ function App() {
     vscode.postMessage({ type: "saveBody", bodyMd });
 
   return (
-    <div class="session-shell">
-      <nav class="session-shell__nav" aria-label="Webview navigation">
-        <button
-          type="button"
-          class="session-view__btn session-view__btn--tiny"
-          onClick={goBack}
-          disabled={!canGoBack}
-          aria-label="Back"
-        >
-          ← Back
-        </button>
-        {stack.length > 2 && (
-          <button
-            type="button"
-            class="session-view__btn session-view__btn--tiny"
-            onClick={goRoot}
-            aria-label="Back to root"
-          >
-            ⤴ Root
-          </button>
-        )}
-        <ol class="session-shell__crumbs">
-          {stack.map((s, i) => (
-            <li
-              class={`session-shell__crumb${i === stack.length - 1 ? " session-shell__crumb--current" : ""}`}
-              key={i}
-            >
-              {viewLabel(s)}
-            </li>
-          ))}
-        </ol>
-      </nav>
-
-      {error && <div class="session-shell__error">{error}</div>}
-
+    <div class="shell">
+      <NavBar
+        crumbs={stack.map(viewLabel)}
+        canGoBack={stack.length > 1}
+        canGoRoot={stack.length > 2}
+        onBack={goBack}
+        onRoot={goRoot}
+      />
+      {error && <div class="shell__error">{error}</div>}
       {top.kind === "session-loading" && (
-        <div class="session-view__loading">Loading {top.groupPath}/{top.slug}…</div>
+        <div class="loading">
+          Loading {top.groupPath}/{top.slug}…
+        </div>
       )}
       {top.kind === "md-loading" && (
-        <div class="session-view__loading">Loading {basename(top.path)}…</div>
+        <div class="loading">Loading {basename(top.path)}…</div>
       )}
       {top.kind === "session" && (
         <SessionView
@@ -198,9 +159,7 @@ function App() {
           onSaveBody={saveBody}
         />
       )}
-      {top.kind === "md" && (
-        <MdView data={top.data} onEditInVscode={editInVscode} />
-      )}
+      {top.kind === "md" && <MdView data={top.data} onEditInVscode={editInVscode} />}
     </div>
   );
 }

@@ -1,0 +1,14 @@
+.panel {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--vscode-panel-border);
+
+  &__title {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+}

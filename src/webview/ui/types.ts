@@ -48,6 +48,11 @@ export interface LinkRow {
   peer: LinkPeer | null;
 }
 
+export interface LinkOf {
+  outgoing: LinkRow[];
+  incoming: LinkRow[];
+}
+
 export interface Conversation {
   id: number;
   provider: string;
@@ -82,10 +87,7 @@ export interface SessionViewData {
   groupPath: string;
   session: SessionRow;
   files: FileRefRow[];
-  links: {
-    outgoing: LinkRow[];
-    incoming: LinkRow[];
-  };
+  links: LinkOf;
   participants: Participant[];
   fileChanges: FileChange[];
   conversations: Conversation[];
@@ -96,6 +98,11 @@ export interface MdViewData {
   fileRefId: number;
   content: string;
 }
+
+export type MdEntry =
+  | { kind: "loading" }
+  | { kind: "ok"; content: string }
+  | { kind: "err"; message: string };
 
 export type ViewState =
   | { kind: "session"; data: SessionViewData }

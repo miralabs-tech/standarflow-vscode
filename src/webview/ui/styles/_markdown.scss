@@ -1,0 +1,70 @@
+.markdown {
+  h1, h2, h3, h4, h5, h6 {
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+  }
+
+  h1 { font-size: 1.4rem; }
+  h2 { font-size: 1.2rem; }
+  h3 { font-size: 1.05rem; }
+
+  p {
+    margin: 0.6rem 0;
+  }
+
+  a {
+    color: var(--vscode-textLink-foreground);
+
+    &:hover {
+      color: var(--vscode-textLink-activeForeground);
+    }
+  }
+
+  code {
+    font-family: var(--vscode-editor-font-family);
+    background: var(--vscode-textCodeBlock-background);
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    font-size: 0.9em;
+  }
+
+  pre {
+    background: var(--vscode-textCodeBlock-background);
+    padding: 0.85rem 1rem;
+    border-radius: 6px;
+    overflow-x: auto;
+
+    code {
+      background: transparent;
+      padding: 0;
+      font-size: 0.88em;
+    }
+  }
+
+  blockquote {
+    margin: 0.75rem 0;
+    padding: 0.5rem 1rem;
+    border-left: 3px solid var(--vscode-textBlockQuote-border);
+    background: var(--vscode-textBlockQuote-background);
+    color: var(--vscode-descriptionForeground);
+  }
+
+  ul, ol {
+    padding-left: 1.5rem;
+  }
+
+  table {
+    border-collapse: collapse;
+    margin: 0.75rem 0;
+
+    th, td {
+      border: 1px solid var(--vscode-panel-border);
+      padding: 0.35rem 0.75rem;
+    }
+
+    th {
+      background: var(--vscode-editor-inactiveSelectionBackground);
+    }
+  }
+}

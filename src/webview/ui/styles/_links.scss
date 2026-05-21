@@ -1,0 +1,79 @@
+.links {
+  &__section + &__section {
+    margin-top: 1rem;
+  }
+
+  &__subtitle {
+    margin: 0 0 0.5rem 0;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground);
+  }
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+  font-family: var(--vscode-editor-font-family);
+  font-size: 0.88rem;
+
+  &--unresolved {
+    color: var(--vscode-descriptionForeground);
+    font-style: italic;
+  }
+
+  &__button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.3rem 0.5rem;
+    background: transparent;
+    border: 1px solid transparent;
+    color: inherit;
+    border-radius: 3px;
+    cursor: pointer;
+    text-align: left;
+    font: inherit;
+
+    &:hover {
+      background: var(--vscode-list-hoverBackground);
+      border-color: var(--vscode-focusBorder);
+    }
+
+    &:focus-visible {
+      outline: 1px solid var(--vscode-focusBorder);
+      outline-offset: 1px;
+    }
+  }
+
+  &__direction {
+    color: var(--vscode-descriptionForeground);
+  }
+
+  &__relation {
+    background: var(--vscode-textCodeBlock-background);
+    padding: 0.05rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.85em;
+  }
+
+  &__target {
+    display: flex;
+    flex-direction: column;
+    color: var(--vscode-textLink-foreground);
+    line-height: 1.2;
+  }
+
+  &__target-slug {
+    font-weight: 600;
+  }
+
+  &__target-desc {
+    font-size: 0.78em;
+    color: var(--vscode-descriptionForeground);
+    font-weight: normal;
+  }
+}

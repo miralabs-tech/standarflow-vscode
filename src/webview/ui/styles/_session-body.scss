@@ -1,0 +1,29 @@
+.session-body {
+  position: relative;
+
+  &__toolbar {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.6rem;
+  }
+
+  &__editor {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 18rem;
+    padding: 0.75rem 1rem;
+    background: var(--vscode-input-background);
+    color: var(--vscode-input-foreground);
+    border: 1px solid var(--vscode-input-border, var(--vscode-panel-border));
+    border-radius: 4px;
+    font-family: var(--vscode-editor-font-family);
+    font-size: 0.92rem;
+    line-height: 1.5;
+    resize: vertical;
+
+    &:focus {
+      outline: 1px solid var(--vscode-focusBorder);
+      outline-offset: 0;
+    }
+  }
+}

@@ -4,9 +4,10 @@
 what your AI agents do, group their work, link related sessions, attach files, and
 audit which chat touched what — all in a local SQLite DB next to your project.
 
-Standarflow ships a small Rust binary that exposes an MCP server. The extension
-talks to that binary over stdio, so the same data is reachable from Claude Code,
-the terminal CLI, and this extension.
+Standarflow is powered by a small Rust binary that exposes an MCP server. The
+extension talks to that binary over stdio, so the same data is reachable from
+Claude Code, the terminal CLI, and this extension. The binary is fetched
+automatically on first run — no separate install step.
 
 ## Quick start
 
@@ -34,8 +35,8 @@ client that wrote it.
   - **File changes** — the file mutations attributed to this session.
 - **Right-click context menus** on every node — create, rename, move, reparent,
   set kind/status, delete, attach files, focus.
-- **A bundled `standarflow` CLI** the extension launches automatically; point at
-  your own build with `standarflow.binPath`.
+- **The `standarflow` CLI** — fetched and cached automatically on first run;
+  point at your own build with `standarflow.binPath`.
 
 ## Identity & focus
 
@@ -45,13 +46,24 @@ The status bar shows the focused session and which conversation it is pinned for
 Focus a session and, once hooks are installed, every file that chat edits is
 logged against it.
 
+## The standarflow binary
+
+The extension runs a small `standarflow` Rust binary as a subprocess and speaks
+MCP to it over stdio. On first activation it downloads the binary for your
+platform from the [standarflow releases](https://github.com/miralabs-tech/standarflow/releases),
+verifies its SHA-256 checksum, and caches it under the extension's global
+storage. Later launches reuse the cached copy.
+
+To run your own build instead, set `standarflow.binPath` to its absolute path.
+If the download fails and a `standarflow` binary is on your `PATH`, the
+extension uses that as a fallback.
+
 ## Settings
 
 | Setting | Default | What it does |
 | --- | --- | --- |
-| `standarflow.binPath` | *(empty)* | Path to the `standarflow` binary. Empty = the bundled binary; falls back to `standarflow` on `PATH`. |
+| `standarflow.binPath` | *(empty)* | Path to the `standarflow` binary. Empty = the auto-downloaded, cached binary; falls back to `standarflow` on `PATH`. |
 | `standarflow.dbPath` | *(empty)* | Absolute path to the SQLite DB. Empty = `${workspaceFolder}/.standarflow/standarflow.db`. |
-| `standarflow.defaultGroup` | *(empty)* | Slug path of a default group (e.g. `backend/auth`). |
 | `standarflow.autoRefreshMs` | `0` | Auto-refresh interval in ms. `0` disables it. |
 
 ## Wiring AI agents
@@ -64,11 +76,10 @@ logged against it.
 
 ## Docs
 
-- [data-model.md](../../docs/data-model.md) — schema and identity model
-- [commands.md](../../docs/commands.md) — CLI & MCP reference
-- [automation.md](../../docs/automation.md) — the hook → ingest → tail pipeline
-- [workflows.md](../../docs/workflows.md) — recipes
+Full documentation, in **English** and **Français**, lives in
+**[docs/](docs/README.md)** — Concepts, Commands, Automation, Settings, and a
+no-jargon MCP-tools guide.
 
 ## License
 
-MIT — see [LICENSE](../../LICENSE).
+MIT — see [LICENSE](LICENSE).

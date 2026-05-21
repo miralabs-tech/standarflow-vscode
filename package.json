@@ -4,22 +4,42 @@
   "description": "Session, artefact and file-reference store for AI-assisted work.",
   "publisher": "miralabs-tech",
   "version": "0.1.0",
+  "standarflowCli": "0.1.0",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/miralabs-tech/standarflow-vscode.git"
+  },
+  "homepage": "https://github.com/miralabs-tech/standarflow-vscode#readme",
+  "bugs": {
+    "url": "https://github.com/miralabs-tech/standarflow-vscode/issues"
+  },
   "engines": {
     "vscode": "^1.105.0"
   },
   "categories": ["Other"],
+  "icon": "media/icon-marketplace.png",
   "main": "./dist/extension.js",
   "activationEvents": [
     "onStartupFinished"
   ],
   "contributes": {
+    "icons": {
+      "standarflow-logo": {
+        "description": "Standarflow logo",
+        "default": {
+          "fontPath": "./media/standarflow-icons.woff",
+          "fontCharacter": "\\E000"
+        }
+      }
+    },
     "configuration": {
       "title": "Standarflow",
       "properties": {
         "standarflow.binPath": {
           "type": "string",
           "default": "",
-          "description": "Path to the standarflow binary. Empty = use the binary bundled with the extension (dist/bin/standarflow[.exe]). Falls back to 'standarflow' on PATH if the bundled binary is missing."
+          "description": "Path to the standarflow binary. Empty = the extension downloads and caches the binary for your platform on first run. Falls back to 'standarflow' on PATH if the download fails."
         },
         "standarflow.dbPath": {
           "type": "string",
@@ -416,29 +436,36 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "bun run build",
+    "vscode:prepublish": "bun run build:icons && bun run build",
     "build": "node esbuild.config.mjs",
+    "build:icons": "bun scripts/build-icon-font.ts && bun scripts/build-marketplace-icon.ts",
     "watch": "node esbuild.config.mjs --watch",
     "compile": "tsc -b",
-    "build:rust": "cargo build --release -p standarflow-cli",
+    "build:rust": "bun scripts/build-rust.ts",
     "copy:bin": "bun scripts/copy-bin.ts",
     "package": "vsce package --no-dependencies --no-rewrite-relative-links --out standarflow.vsix",
     "install:local": "bun run build:rust && bun run build && bun run copy:bin && bun run package && bun scripts/install-vsix.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
+    "classigo": "^2.0.0",
     "markdown-it": "^14.1.1",
     "matchigo": "^1.0.2",
     "preact": "^10.29.2"
   },
   "devDependencies": {
+    "@resvg/resvg-js": "^2.6.2",
     "@types/markdown-it": "^14.1.2",
     "@types/node": "^25.9.0",
     "@types/vscode": "^1.105.0",
+    "@vscode/vsce": "^3.9.1",
     "bun-types": "^1.3.14",
     "esbuild": "^0.28.0",
     "esbuild-sass-plugin": "^3.7.0",
     "sass": "^1.99.0",
+    "svg2ttf": "^6.1.0",
+    "svgicons2svgfont": "^12.0.0",
+    "ttf2woff": "^3.0.0",
     "typescript": "^6.0.3"
   }
 }
