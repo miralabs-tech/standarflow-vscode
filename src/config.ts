@@ -5,7 +5,6 @@ import * as vscode from "vscode";
 export interface StandarflowConfig {
   binPath: string;
   dbPath: string;
-  defaultGroup: string;
   autoRefreshMs: number;
 }
 
@@ -14,7 +13,6 @@ export function readConfig(extensionPath: string): StandarflowConfig {
   return {
     binPath: resolveBinPath(cfg.get<string>("binPath")?.trim() || "", extensionPath),
     dbPath: resolveDbPath(cfg.get<string>("dbPath")?.trim() || ""),
-    defaultGroup: cfg.get<string>("defaultGroup")?.trim() || "",
     autoRefreshMs: cfg.get<number>("autoRefreshMs") ?? 0,
   };
 }

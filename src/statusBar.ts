@@ -32,45 +32,46 @@ const renderState = matcher<ConnectionState, Rendered>()
   }))
   .exhaustive();
 
+/// Single status-bar item: connection state with the focus count folded in as
+/// a suffix. Clicking it opens the Standarflow action menu.
 export class StandarflowStatusBar implements vscode.Disposable {
   private readonly item: vscode.StatusBarItem;
-  private readonly focusItem: vscode.StatusBarItem;
+  private state: ConnectionState = { kind: "disconnected" };
+  private focusCount = 0;
 
   constructor() {
     this.item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 100);
-    this.item.command = "standarflow.showWorkspaceInfo";
+    this.item.command = "standarflow.showActions";
     this.item.show();
-    this.set({ kind: "disconnected" });
-
-    this.focusItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 99);
-    this.focusItem.command = "workbench.view.extension.standarflow";
-    this.focusItem.hide();
+    this.render();
   }
 
   set(state: ConnectionState): void {
-    const { text, tooltip } = renderState(state);
-    this.item.text = text;
-    this.item.tooltip = tooltip;
+    this.state = state;
+    this.render();
   }
 
   setFocusCount(count: number): void {
-    if (count <= 0) {
-      this.focusItem.hide();
-      return;
-    }
-    this.focusItem.text = `$(target) ${count} focused`;
-    this.focusItem.tooltip =
-      `${count} conversation(s) have a pinned standarflow session.\n` +
-      "Open the Standarflow view to manage focus per conversation.";
-    this.focusItem.show();
+    this.focusCount = Math.max(0, count);
+    this.render();
   }
 
   hideFocus(): void {
-    this.focusItem.hide();
+    this.focusCount = 0;
+    this.render();
+  }
+
+  private render(): void {
+    const { text, tooltip } = renderState(this.state);
+    const showFocus = this.focusCount > 0 && this.state.kind === "ready";
+    this.item.text = showFocus ? `${text} · $(target) ${this.focusCount}` : text;
+    this.item.tooltip =
+      tooltip +
+      (showFocus ? `\n${this.focusCount} conversation(s) with a pinned session` : "") +
+      "\n— Click for actions —";
   }
 
   dispose(): void {
     this.item.dispose();
-    this.focusItem.dispose();
   }
 }

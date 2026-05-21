@@ -16,6 +16,10 @@ export interface WorkspaceInfo {
   /// The workspace's current session pointer, or null before the first focus
   /// on a build carrying the pointer.
   current_session_id: number | null;
+  /// The current session's location, resolved from current_session_id so the
+  /// extension can reveal it in the tree without a second lookup.
+  current_session_group_path: string | null;
+  current_session_slug: string | null;
   first_run: boolean;
 }
 

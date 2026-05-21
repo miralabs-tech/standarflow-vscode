@@ -1,10 +1,10 @@
 import * as vscode from "vscode";
 import { matcher } from "matchigo";
-import type { SessionLite, StandarflowClient } from "./mcpClient";
 import { isGhost } from "./conversation";
 import { buildFileTree, fileTreeNode } from "./tree/fileTree";
 import { renderNode } from "./tree/render";
 import type { TreeNode } from "./tree/types";
+import type { SessionLite, StandarflowClient } from "./mcpClient";
 
 export type { FileTreeDir, FileTreeFile, FileTreeNode, TreeNode } from "./tree/types";
 
@@ -44,6 +44,9 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
   private readonly _onDidChange = new vscode.EventEmitter<TreeNode | undefined>();
   readonly onDidChangeTreeData = this._onDidChange.event;
 
+  /// When true, superseded and archived top-level sessions are hidden.
+  hideSuperseded = false;
+
   constructor(private readonly clientGetter: () => StandarflowClient | undefined) {}
 
   refresh(node?: TreeNode): void {
@@ -52,6 +55,38 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
 
   getTreeItem(node: TreeNode): vscode.TreeItem {
     return renderNode(node);
+  }
+
+  /// Parent of a node — required by `TreeView.reveal`. Only the session →
+  /// group → group chain is implemented (that is what revealing a session
+  /// needs); other node kinds return undefined.
+  async getParent(node: TreeNode): Promise<TreeNode | undefined> {
+    const client = this.clientGetter();
+    if (!client) return undefined;
+    if (node.kind === "session") {
+      return this.groupNodeFor(client, node.groupPath);
+    }
+    if (node.kind === "group") {
+      const idx = node.path.lastIndexOf("/");
+      return idx < 0
+        ? undefined
+        : this.groupNodeFor(client, node.path.slice(0, idx));
+    }
+    return undefined;
+  }
+
+  /// Rebuild a `group` node for a slug path — `getParent` needs real GroupRow
+  /// objects, and the tree's nodes are created fresh on each fetch.
+  private async groupNodeFor(
+    client: StandarflowClient,
+    path: string,
+  ): Promise<TreeNode | undefined> {
+    const idx = path.lastIndexOf("/");
+    const parentPath = idx < 0 ? undefined : path.slice(0, idx);
+    const slug = idx < 0 ? path : path.slice(idx + 1);
+    const siblings = await client.groupList(parentPath);
+    const group = siblings.find((g) => g.slug === slug);
+    return group ? { kind: "group", path, group } : undefined;
   }
 
   async getChildren(node?: TreeNode): Promise<TreeNode[]> {
@@ -119,6 +154,11 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
         }));
         const sessionNodes: TreeNode[] = sessions
           .filter((s) => s.parent_session_id === null)
+          .filter(
+            (s) =>
+              !this.hideSuperseded ||
+              (s.status !== "superseded" && s.status !== "archived"),
+          )
           .map((s) => ({
             kind: "session",
             groupPath: n.path,

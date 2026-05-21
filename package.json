@@ -26,11 +26,6 @@
           "default": "",
           "description": "Absolute path to the SQLite DB. Leave empty to use ${workspaceFolder}/.standarflow/standarflow.db."
         },
-        "standarflow.defaultGroup": {
-          "type": "string",
-          "default": "",
-          "description": "Slug path of the group to focus by default (e.g. backend/auth)."
-        },
         "standarflow.autoRefreshMs": {
           "type": "integer",
           "default": 0,
@@ -39,6 +34,10 @@
       }
     },
     "commands": [
+      {
+        "command": "standarflow.showActions",
+        "title": "Standarflow: Actions"
+      },
       {
         "command": "standarflow.openSettings",
         "title": "Standarflow: Open Settings"
@@ -55,6 +54,21 @@
         "command": "standarflow.refreshTree",
         "title": "Standarflow: Refresh Tree",
         "icon": "$(refresh)"
+      },
+      {
+        "command": "standarflow.revealCurrentSession",
+        "title": "Standarflow: Reveal Current Session",
+        "icon": "$(target)"
+      },
+      {
+        "command": "standarflow.hideSuperseded",
+        "title": "Standarflow: Hide Superseded Sessions",
+        "icon": "$(eye-closed)"
+      },
+      {
+        "command": "standarflow.showSuperseded",
+        "title": "Standarflow: Show Superseded Sessions",
+        "icon": "$(eye)"
       },
       {
         "command": "standarflow.openSession",
@@ -222,6 +236,11 @@
     "menus": {
       "view/title": [
         {
+          "command": "standarflow.revealCurrentSession",
+          "when": "view == standarflow.tree",
+          "group": "navigation@0"
+        },
+        {
           "command": "standarflow.groupCreate",
           "when": "view == standarflow.tree",
           "group": "navigation@1"
@@ -230,6 +249,16 @@
           "command": "standarflow.refreshTree",
           "when": "view == standarflow.tree",
           "group": "navigation@2"
+        },
+        {
+          "command": "standarflow.hideSuperseded",
+          "when": "view == standarflow.tree && !standarflow.hideSuperseded",
+          "group": "navigation@3"
+        },
+        {
+          "command": "standarflow.showSuperseded",
+          "when": "view == standarflow.tree && standarflow.hideSuperseded",
+          "group": "navigation@3"
         }
       ],
       "view/item/context": [

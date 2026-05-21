@@ -1,18 +1,20 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { showActionsMenu } from "./actionsMenu";
 import { registerCommands } from "./commands";
 import { installClaudeHooks } from "./commands/hooks";
 import { readConfig } from "./config";
 import { generateMcpConfig } from "./mcpConfig";
 import { StandarflowClient, type WorkspaceInfo } from "./mcpClient";
 import { StandarflowStatusBar } from "./statusBar";
-import { StandarflowTreeProvider } from "./treeProvider";
+import { StandarflowTreeProvider, type TreeNode } from "./treeProvider";
 import { SessionWebviewHost } from "./webview/host";
 import { probeWorkspace } from "./workspace";
 
 let client: StandarflowClient | undefined;
 let statusBar: StandarflowStatusBar | undefined;
 let treeProvider: StandarflowTreeProvider | undefined;
+let treeView: vscode.TreeView<TreeNode> | undefined;
 let webviewHost: SessionWebviewHost | undefined;
 let autoRefreshTimer: NodeJS.Timeout | undefined;
 let lastInfo: WorkspaceInfo | undefined;
@@ -26,14 +28,24 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
   context.subscriptions.push(statusBar);
 
   treeProvider = new StandarflowTreeProvider(() => client);
-  context.subscriptions.push(
-    vscode.window.registerTreeDataProvider("standarflow.tree", treeProvider),
+  treeView = vscode.window.createTreeView("standarflow.tree", {
+    treeDataProvider: treeProvider,
+    showCollapseAll: true,
+  });
+  context.subscriptions.push(treeView);
+  void vscode.commands.executeCommand(
+    "setContext",
+    "standarflow.hideSuperseded",
+    false,
   );
 
   webviewHost = new SessionWebviewHost(context.extensionUri, () => client);
   context.subscriptions.push(webviewHost);
 
   context.subscriptions.push(
+    vscode.commands.registerCommand("standarflow.showActions", () =>
+      showActionsMenu(),
+    ),
     vscode.commands.registerCommand("standarflow.openSettings", () => {
       void vscode.commands.executeCommand(
         "workbench.action.openSettings",
@@ -46,6 +58,15 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.commands.registerCommand("standarflow.refreshTree", () => {
       treeProvider?.refresh();
+    }),
+    vscode.commands.registerCommand("standarflow.revealCurrentSession", () =>
+      revealCurrentSession(),
+    ),
+    vscode.commands.registerCommand("standarflow.hideSuperseded", () => {
+      setHideSuperseded(true);
+    }),
+    vscode.commands.registerCommand("standarflow.showSuperseded", () => {
+      setHideSuperseded(false);
     }),
     vscode.commands.registerCommand("standarflow.showWorkspaceInfo", async () => {
       if (!client) {
@@ -250,6 +271,53 @@ async function refreshFocus(): Promise<void> {
     // Older binaries don't expose focus_list yet — hide the item
     // instead of erroring out.
     statusBar.hideFocus();
+  }
+}
+
+function setHideSuperseded(hide: boolean): void {
+  if (!treeProvider) return;
+  treeProvider.hideSuperseded = hide;
+  void vscode.commands.executeCommand(
+    "setContext",
+    "standarflow.hideSuperseded",
+    hide,
+  );
+  treeProvider.refresh();
+}
+
+async function revealCurrentSession(): Promise<void> {
+  if (!client || !treeView) {
+    void vscode.window.showWarningMessage(
+      'Standarflow is not connected. Run "Standarflow: Reconnect".',
+    );
+    return;
+  }
+  try {
+    const info = await client.workspaceInfo();
+    if (
+      info.current_session_id === null ||
+      !info.current_session_group_path ||
+      !info.current_session_slug
+    ) {
+      void vscode.window.showInformationMessage(
+        "No current session yet — focus a session to set it.",
+      );
+      return;
+    }
+    const session = await client.sessionGet(info.current_session_group_path, {
+      slug: info.current_session_slug,
+    });
+    await treeView.reveal(
+      {
+        kind: "session",
+        groupPath: info.current_session_group_path,
+        session,
+        isCurrent: true,
+      },
+      { select: true, focus: true, expand: true },
+    );
+  } catch (e) {
+    void vscode.window.showErrorMessage(`standarflow: ${(e as Error).message}`);
   }
 }
 
