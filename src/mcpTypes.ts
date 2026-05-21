@@ -23,6 +23,21 @@ export interface WorkspaceInfo {
   first_run: boolean;
 }
 
+/// Coarse change-feed from `changes_since` — which DB rows changed since a
+/// timestamp, so a client refreshes only the affected parts of its view.
+export interface ChangesSince {
+  /// The server's "now" — pass back as the next ts.
+  now: number;
+  /// A group row was created or updated.
+  groups: boolean;
+  /// A conversation or focus row was touched.
+  conversations: boolean;
+  /// Ids of sessions created or updated.
+  sessions: number[];
+  /// Ids of sessions with new file-change rows.
+  file_change_sessions: number[];
+}
+
 export interface GroupRow {
   id: number;
   parent_id: number | null;

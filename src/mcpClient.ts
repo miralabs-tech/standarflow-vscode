@@ -1,6 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import type {
+  ChangesSince,
   Conversation,
   FileChange,
   FileDeleteWithSourceResult,
@@ -59,6 +60,10 @@ export class StandarflowClient {
 
   workspaceInfo(): Promise<WorkspaceInfo> {
     return this.call<WorkspaceInfo>("workspace_info");
+  }
+
+  changesSince(ts: number): Promise<ChangesSince> {
+    return this.call<ChangesSince>("changes_since", { ts });
   }
 
   groupList(parentPath?: string): Promise<GroupRow[]> {

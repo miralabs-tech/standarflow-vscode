@@ -47,10 +47,29 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
   /// When true, superseded and archived top-level sessions are hidden.
   hideSuperseded = false;
 
+  /// Last-built nodes, kept so a targeted refresh can fire the real node
+  /// object (with every field renderNode needs) rather than reconstruct it.
+  private conversationsRootNode: TreeNode | undefined;
+  private readonly sessionNodes = new Map<number, TreeNode>();
+
   constructor(private readonly clientGetter: () => StandarflowClient | undefined) {}
 
   refresh(node?: TreeNode): void {
     this._onDidChange.fire(node);
+  }
+
+  /// Refresh only the Conversations subtree.
+  refreshConversations(): void {
+    if (this.conversationsRootNode) {
+      this._onDidChange.fire(this.conversationsRootNode);
+    }
+  }
+
+  /// Refresh only one session's subtree (artefacts, files, touched files), if
+  /// that session node is currently built. A no-op otherwise.
+  refreshSession(id: number): void {
+    const node = this.sessionNodes.get(id);
+    if (node) this._onDidChange.fire(node);
   }
 
   getTreeItem(node: TreeNode): vscode.TreeItem {
@@ -118,10 +137,12 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
         path: g.slug,
         group: g,
       }));
-      return [
-        { kind: "conversationsRoot", liveCount, ghostCount },
-        ...groupNodes,
-      ];
+      this.conversationsRootNode = {
+        kind: "conversationsRoot",
+        liveCount,
+        ghostCount,
+      };
+      return [this.conversationsRootNode, ...groupNodes];
     }
     const childrenOf = matcher<TreeNode, Promise<TreeNode[]>>()
       .with({ kind: "conversationsRoot" }, async () => {
@@ -159,12 +180,16 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
               !this.hideSuperseded ||
               (s.status !== "superseded" && s.status !== "archived"),
           )
-          .map((s) => ({
-            kind: "session",
-            groupPath: n.path,
-            session: s,
-            isCurrent: s.id === info.current_session_id,
-          }));
+          .map((s) => {
+            const sessionNode: TreeNode = {
+              kind: "session",
+              groupPath: n.path,
+              session: s,
+              isCurrent: s.id === info.current_session_id,
+            };
+            this.sessionNodes.set(s.id, sessionNode);
+            return sessionNode;
+          });
         return [...subgroupNodes, ...sessionNodes];
       })
       .with({ kind: "session" }, (n) =>

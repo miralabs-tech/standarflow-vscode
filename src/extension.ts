@@ -21,6 +21,7 @@ let lastInfo: WorkspaceInfo | undefined;
 let extensionPath = "";
 let dbWatchers: vscode.Disposable[] = [];
 let syncDebounce: NodeJS.Timeout | undefined;
+let lastSyncTs = 0;
 
 export async function activate(context: vscode.ExtensionContext): Promise<void> {
   extensionPath = context.extensionPath;
@@ -213,8 +214,30 @@ function scheduleDbSync(): void {
   if (syncDebounce) clearTimeout(syncDebounce);
   syncDebounce = setTimeout(() => {
     syncDebounce = undefined;
+    void applyDbChanges();
+  }, 300);
+}
+
+/// React to a DB write: ask the server what changed since the last sync and
+/// refresh only the affected parts of the tree. A no-op when nothing changed —
+/// that is what keeps idle WAL touches from flooding the UI with reloads.
+async function applyDbChanges(): Promise<void> {
+  if (!client) return;
+  const changes = await client.changesSince(lastSyncTs).catch(() => null);
+  if (!changes) {
+    // Older binary without changes_since, or a transient error — fall back to
+    // a full refresh so the tree never silently drifts.
     treeProvider?.refresh();
     void refreshFocus();
+    return;
+  }
+  // Re-query from 1s before `now`: a change landing in the same second as
+  // this sync would otherwise be lost to the server's strict `> ts` test.
+  lastSyncTs = changes.now - 1;
+
+  const structural = changes.groups || changes.sessions.length > 0;
+  if (structural) {
+    treeProvider?.refresh();
     void webviewHost?.refreshAll();
     if (client) {
       void client.workspaceInfo().then((info) => {
@@ -222,7 +245,16 @@ function scheduleDbSync(): void {
         statusBar?.set({ kind: "ready", info });
       });
     }
-  }, 300);
+  } else {
+    for (const id of changes.file_change_sessions) {
+      treeProvider?.refreshSession(id);
+    }
+    if (changes.file_change_sessions.length > 0) {
+      void webviewHost?.refreshAll();
+    }
+    if (changes.conversations) treeProvider?.refreshConversations();
+  }
+  if (changes.conversations) void refreshFocus();
 }
 
 function disposeDbWatchers(): void {
@@ -335,6 +367,7 @@ async function connect(): Promise<void> {
     statusBar.set({ kind: "ready", info });
     await refreshFocus();
     treeProvider?.refresh();
+    lastSyncTs = Math.floor(Date.now() / 1000);
     installDbWatcher(cfg.dbPath);
     scheduleAutoRefresh(cfg.autoRefreshMs);
   } catch (e) {
