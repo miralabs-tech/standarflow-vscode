@@ -10,3 +10,4 @@ bun.lockb
 bun.lock
 **/*.map
 !dist/bin/**
+.standarflow/
