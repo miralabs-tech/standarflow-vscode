@@ -1,4 +1,5 @@
 import * as vscode from "vscode";
+import { isGhost } from "../conversation";
 import type { CommandCtx } from "./shared";
 import { pickSession } from "./shared";
 import { nodeConversation } from "./treeNode";
@@ -95,5 +96,38 @@ export async function conversationKill(ctx: CommandCtx): Promise<void> {
   await new Promise((resolve) => setTimeout(resolve, 400));
   void vscode.window.showInformationMessage(
     `Conversation "${label}" agent (pid ${pid}) stopped.`,
+  );
+}
+
+export async function killGhostConversations(ctx: CommandCtx): Promise<void> {
+  const ghosts = (await ctx.client.conversationList()).filter(isGhost);
+  if (ghosts.length === 0) {
+    void vscode.window.showInformationMessage(
+      "No ghost conversations — nothing to kill.",
+    );
+    return;
+  }
+  const choice = await vscode.window.showWarningMessage(
+    `Kill ${ghosts.length} ghost agent process(es)? These conversations have been live but silent since SessionStart.`,
+    { modal: true },
+    "Kill all",
+  );
+  if (choice !== "Kill all") return;
+  let killed = 0;
+  for (const g of ghosts) {
+    const pid = g.last_conversation_pid;
+    if (pid === null) continue;
+    try {
+      process.kill(pid);
+      killed++;
+    } catch (e) {
+      // ESRCH — already gone, count it; anything else, skip and keep going.
+      if ((e as NodeJS.ErrnoException).code === "ESRCH") killed++;
+    }
+  }
+  // Let the OS drop the processes before the post-command refresh runs.
+  await new Promise((resolve) => setTimeout(resolve, 400));
+  void vscode.window.showInformationMessage(
+    `Stopped ${killed} ghost agent process(es).`,
   );
 }

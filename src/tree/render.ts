@@ -77,11 +77,17 @@ export const renderNode = matcher<TreeNode, vscode.TreeItem>()
     );
     item.id = "conversationsRoot";
     item.iconPath = new vscode.ThemeIcon("comment-discussion");
-    item.description = `${n.liveCount} live`;
+    item.description =
+      n.ghostCount > 0
+        ? `${n.liveCount - n.ghostCount} active · ${n.ghostCount} ghost`
+        : `${n.liveCount} live`;
     item.contextValue = "standarflow.conversationsRoot";
     item.tooltip =
       `AI chats known to this workspace and the session each one focuses.\n` +
-      `${n.liveCount} chat(s) currently live — each is a separate agent process.`;
+      `${n.liveCount} chat(s) currently live — each is a separate agent process.` +
+      (n.ghostCount > 0
+        ? `\n${n.ghostCount} ghost (live but silent since SessionStart) — right-click to kill them.`
+        : "");
     return item;
   })
   .with({ kind: "conversation" }, (n) => {
@@ -92,15 +98,22 @@ export const renderNode = matcher<TreeNode, vscode.TreeItem>()
       vscode.TreeItemCollapsibleState.None,
     );
     item.id = `conversation:${c.id}`;
+    const iconColor = n.isGhost
+      ? "charts.orange"
+      : n.focus
+        ? "charts.green"
+        : ended
+          ? "charts.gray"
+          : "foreground";
     item.iconPath = new vscode.ThemeIcon(
       "comment-discussion",
-      n.focus
-        ? new vscode.ThemeColor("charts.green")
-        : new vscode.ThemeColor(ended ? "charts.gray" : "foreground"),
+      new vscode.ThemeColor(iconColor),
     );
-    item.description = n.focus
-      ? `→ ${n.focus.group_path}/${n.focus.session_slug} · ${relTime(c.last_seen_at)}`
-      : `no focus · ${relTime(c.last_seen_at)}`;
+    item.description = n.isGhost
+      ? `ghost · idle ${relTime(c.last_seen_at)}`
+      : n.focus
+        ? `→ ${n.focus.group_path}/${n.focus.session_slug} · ${relTime(c.last_seen_at)}`
+        : `no focus · ${relTime(c.last_seen_at)}`;
     item.tooltip =
       `Conversation #${c.id} · ${c.provider}\n` +
       `${c.provider_conversation_id}\n` +
@@ -111,7 +124,10 @@ export const renderNode = matcher<TreeNode, vscode.TreeItem>()
       (n.focus
         ? `Focused: ${n.focus.group_path}/${n.focus.session_slug} (${n.focus.session_kind} · ${n.focus.session_status})`
         : "No focused session") +
-      (ended ? "\n(ended)" : "");
+      (ended ? "\n(ended)" : "") +
+      (n.isGhost
+        ? "\nGhost — live agent, no activity since SessionStart. Safe to kill."
+        : "");
     item.contextValue = n.focus
       ? "standarflow.conversation.focused"
       : "standarflow.conversation.unfocused";

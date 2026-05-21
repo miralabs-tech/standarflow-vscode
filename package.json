@@ -168,6 +168,11 @@
         "icon": "$(stop-circle)"
       },
       {
+        "command": "standarflow.killGhostConversations",
+        "title": "Standarflow: Kill Ghost Conversation Agents",
+        "icon": "$(stop-circle)"
+      },
+      {
         "command": "standarflow.copySessionReference",
         "title": "Standarflow: Copy Session Reference",
         "icon": "$(copy)"
@@ -306,6 +311,11 @@
         {
           "command": "standarflow.conversationKill",
           "when": "view == standarflow.tree && viewItem =~ /^standarflow\\.conversation\\./",
+          "group": "9_destructive@1"
+        },
+        {
+          "command": "standarflow.killGhostConversations",
+          "when": "view == standarflow.tree && viewItem == standarflow.conversationsRoot",
           "group": "9_destructive@1"
         },
         {

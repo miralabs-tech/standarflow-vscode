@@ -1,6 +1,7 @@
 import * as vscode from "vscode";
 import { matcher } from "matchigo";
 import type { SessionLite, StandarflowClient } from "./mcpClient";
+import { isGhost } from "./conversation";
 import { buildFileTree, fileTreeNode } from "./tree/fileTree";
 import { renderNode } from "./tree/render";
 import type { TreeNode } from "./tree/types";
@@ -76,12 +77,16 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
         client.conversationList(),
       ]);
       const liveCount = convs.filter((c) => c.is_live).length;
+      const ghostCount = convs.filter(isGhost).length;
       const groupNodes: TreeNode[] = groups.map((g) => ({
         kind: "group",
         path: g.slug,
         group: g,
       }));
-      return [{ kind: "conversationsRoot", liveCount }, ...groupNodes];
+      return [
+        { kind: "conversationsRoot", liveCount, ghostCount },
+        ...groupNodes,
+      ];
     }
     const childrenOf = matcher<TreeNode, Promise<TreeNode[]>>()
       .with({ kind: "conversationsRoot" }, async () => {
@@ -98,6 +103,7 @@ export class StandarflowTreeProvider implements vscode.TreeDataProvider<TreeNode
             kind: "conversation",
             conversation: c,
             focus: focusByConv.get(c.id) ?? null,
+            isGhost: isGhost(c),
           }));
       })
       .with({ kind: "group" }, async (n) => {

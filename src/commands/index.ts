@@ -3,7 +3,13 @@ import type { StandarflowClient } from "../mcpClient";
 import type { TreeNode } from "../treeProvider";
 import { copyFileRefPath, copyGroupPath, copySessionReference, copySessionSlug } from "./clipboard";
 import { detachFileRef, fileAttach, fileClaim, fileDeleteWithSource, memoryImport } from "./file";
-import { conversationFocus, conversationKill, conversationRename, conversationUnfocus } from "./focus";
+import {
+  conversationFocus,
+  conversationKill,
+  conversationRename,
+  conversationUnfocus,
+  killGhostConversations,
+} from "./focus";
 import { groupCreate, groupDelete } from "./group";
 import {
   sessionDelete,
@@ -46,6 +52,7 @@ const TABLE: CommandDesc[] = [
   { id: "standarflow.conversationUnfocus", run: conversationUnfocus, post: "focus" },
   { id: "standarflow.conversationRename", run: conversationRename, post: "tree" },
   { id: "standarflow.conversationKill", run: conversationKill, post: "focus" },
+  { id: "standarflow.killGhostConversations", run: killGhostConversations, post: "focus" },
   { id: "standarflow.copySessionReference", run: copySessionReference, post: "none" },
   { id: "standarflow.copySessionSlug", run: copySessionSlug, post: "none" },
   { id: "standarflow.copyGroupPath", run: copyGroupPath, post: "none" },
