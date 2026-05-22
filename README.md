@@ -1,5 +1,15 @@
 # Standarflow for VS Code
 
+<p align="center">
+  <a href="https://github.com/miralabs-tech/standarflow-vscode/releases"><img src="https://img.shields.io/badge/status-alpha-orange?style=flat-square" alt="Status: alpha"></a>
+  <a href="https://github.com/miralabs-tech/standarflow-vscode/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/miralabs-tech/standarflow-vscode/ci.yml?branch=main&label=ci&style=flat-square" alt="CI"></a>
+  <a href="https://github.com/miralabs-tech/standarflow"><img src="https://img.shields.io/badge/built%20on-standarflow%20CLI-blueviolet?style=flat-square" alt="Built on the standarflow CLI"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-green?style=flat-square" alt="License: MIT"></a>
+  <a href="https://github.com/miralabs-tech/standarflow-vscode/stargazers"><img src="https://img.shields.io/github/stars/miralabs-tech/standarflow-vscode?label=stars&style=flat-square" alt="Stars"></a>
+  <a href="https://marketplace.visualstudio.com/items?itemName=miralabs-tech.standarflow"><img src="https://img.shields.io/visual-studio-marketplace/i/miralabs-tech.standarflow?label=vscode%20installs&style=flat-square" alt="VS Code installs"></a>
+  <a href="https://open-vsx.org/extension/miralabs-tech/standarflow"><img src="https://img.shields.io/open-vsx/dt/miralabs-tech/standarflow?label=ovsx%20downloads&style=flat-square" alt="Open VSX downloads"></a>
+</p>
+
 **Session, artefact, link and conversation store for AI-assisted work.** Persist
 what your AI agents do, group their work, link related sessions, attach files, and
 audit which chat touched what — all in a local SQLite DB next to your project.
