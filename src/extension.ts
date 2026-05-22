@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { showActionsMenu } from "./actionsMenu";
-import { ensureBinary } from "./binaryManager";
+import { ensureBinary, updateBinary } from "./binaryManager";
 import { registerCommands } from "./commands";
 import { installClaudeHooks } from "./commands/hooks";
 import { readConfig } from "./config";
@@ -101,6 +101,30 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
     }),
     vscode.commands.registerCommand("standarflow.installClaudeHooks", async () => {
       await installClaudeHooks(await ensureBinary(context, readConfig().binPath));
+    }),
+    vscode.commands.registerCommand("standarflow.updateCli", async () => {
+      if (readConfig().binPath) {
+        void vscode.window.showInformationMessage(
+          'A custom "standarflow.binPath" is set — the managed CLI binary is not used.',
+        );
+        return;
+      }
+      try {
+        const { version, updated } = await updateBinary(context);
+        if (updated) {
+          void vscode.window.showInformationMessage(
+            `Standarflow CLI updated to ${version}. Reconnecting…`,
+          );
+          await disconnect();
+          await connect();
+        } else {
+          void vscode.window.showInformationMessage(
+            `Standarflow CLI is already up to date (${version}).`,
+          );
+        }
+      } catch (e) {
+        void vscode.window.showErrorMessage(`standarflow: ${(e as Error).message}`);
+      }
     }),
     vscode.commands.registerCommand("standarflow.generateMcpConfig", async () => {
       const folder = vscode.workspace.workspaceFolders?.[0];

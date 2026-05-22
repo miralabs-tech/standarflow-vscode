@@ -4,7 +4,7 @@
   "description": "Session, artefact and file-reference store for AI-assisted work.",
   "publisher": "miralabs-tech",
   "version": "0.1.0",
-  "standarflowCli": "0.1.0",
+  "standarflowCli": "^0.1.0",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -236,6 +236,10 @@
       {
         "command": "standarflow.installClaudeHooks",
         "title": "Standarflow: Install Claude Code Hooks"
+      },
+      {
+        "command": "standarflow.updateCli",
+        "title": "Standarflow: Update CLI Binary"
       }
     ],
     "viewsContainers": {
