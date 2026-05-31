@@ -3,8 +3,8 @@
   "displayName": "standarflow",
   "description": "Session, artefact and file-reference store for AI-assisted work.",
   "publisher": "miralabs-tech",
-  "version": "0.1.0",
-  "standarflowCli": "^0.1.0",
+  "version": "0.2.0",
+  "standarflowCli": "^0.2.0",
   "license": "MIT",
   "repository": {
     "type": "git",

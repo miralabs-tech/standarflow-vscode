@@ -1,11 +1,13 @@
+import * as fs from "node:fs/promises";
+import * as os from "node:os";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { showActionsMenu } from "./actionsMenu";
 import { ensureBinary, updateBinary } from "./binaryManager";
 import { registerCommands } from "./commands";
-import { installClaudeHooks } from "./commands/hooks";
+import { installClaudeHooks, runCli } from "./commands/hooks";
 import { readConfig } from "./config";
-import { generateMcpConfig } from "./mcpConfig";
+import { generateMcpConfig, syncMcpConfigIfPresent } from "./mcpConfig";
 import { StandarflowClient, type WorkspaceInfo } from "./mcpClient";
 import { StandarflowStatusBar } from "./statusBar";
 import { StandarflowTreeProvider, type TreeNode } from "./treeProvider";
@@ -146,6 +148,11 @@ export async function activate(context: vscode.ExtensionContext): Promise<void> 
           case "added":
             void vscode.window.showInformationMessage(
               `Added standarflow entry to ${result.path}.`,
+            );
+            break;
+          case "updated":
+            void vscode.window.showInformationMessage(
+              `Updated standarflow entry in ${result.path} (was ${result.previousCommand ?? "<unset>"}).`,
             );
             break;
           case "already-present":
@@ -377,6 +384,61 @@ async function revealCurrentSession(): Promise<void> {
   }
 }
 
+async function syncMcpEntriesAcrossWorkspaces(binPath: string): Promise<void> {
+  for (const folder of vscode.workspace.workspaceFolders ?? []) {
+    try {
+      await syncMcpConfigIfPresent(folder, binPath);
+    } catch {
+      // Silent: a malformed .mcp.json shouldn't block the connect path.
+    }
+  }
+}
+
+const HOOK_MARKER = "ingest --provider claude-code";
+
+async function fileContainsMarker(filePath: string, marker: string): Promise<boolean> {
+  try {
+    const text = await fs.readFile(filePath, "utf-8");
+    return text.includes(marker);
+  } catch {
+    return false;
+  }
+}
+
+// Re-runs `standarflow hooks install` against every scope where the marker is
+// already wired, refreshing the embedded exe path. Skips scopes the user never
+// opted into so we never create settings files behind their back.
+async function syncHookCommandsIfPresent(binPath: string): Promise<void> {
+  const userSettings = path.join(os.homedir(), ".claude", "settings.json");
+  if (await fileContainsMarker(userSettings, HOOK_MARKER)) {
+    try {
+      await runCli(binPath, ["hooks", "install", "--provider", "claude-code", "--scope", "user"]);
+    } catch {
+      // Silent: a stale binary should be reported via the MCP connect failure path.
+    }
+  }
+  for (const folder of vscode.workspace.workspaceFolders ?? []) {
+    const localSettings = path.join(folder.uri.fsPath, ".claude", "settings.local.json");
+    if (!(await fileContainsMarker(localSettings, HOOK_MARKER))) {
+      continue;
+    }
+    try {
+      await runCli(binPath, [
+        "hooks",
+        "install",
+        "--provider",
+        "claude-code",
+        "--scope",
+        "project-local",
+        "--root",
+        folder.uri.fsPath,
+      ]);
+    } catch {
+      // Silent (same reason as above).
+    }
+  }
+}
+
 async function connect(): Promise<void> {
   if (!statusBar || !extensionContext) {
     return;
@@ -385,6 +447,8 @@ async function connect(): Promise<void> {
   try {
     const cfg = readConfig();
     const binPath = await ensureBinary(extensionContext, cfg.binPath);
+    await syncMcpEntriesAcrossWorkspaces(binPath);
+    await syncHookCommandsIfPresent(binPath);
     client = new StandarflowClient();
     await client.connect(binPath, cfg.dbPath);
     const info = await probeWorkspace(client);

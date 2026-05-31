@@ -1,7 +1,7 @@
 import { execFile } from "node:child_process";
 import * as vscode from "vscode";
 
-function runCli(binPath: string, args: string[]): Promise<string> {
+export function runCli(binPath: string, args: string[]): Promise<string> {
   return new Promise((resolve, reject) => {
     execFile(binPath, args, (err, stdout, stderr) => {
       if (err) {
